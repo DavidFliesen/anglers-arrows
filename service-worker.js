@@ -1,5 +1,5 @@
 /* Angler's Arrows — offline-first service worker */
-const CACHE = "anglers-arrows-v7";
+const CACHE = "anglers-arrows-v8";
 const ASSETS = [
   ".",
   "index.html",
