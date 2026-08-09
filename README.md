@@ -20,12 +20,28 @@ silhouette is the board.
 - Difficulty ramps by growing the fish's grid width across the 12 species (≈15 → ≈35 arrow pieces).
 
 
+
+
 ## Learning the fish (the point of it)
-Angler's Arrows is meant to help anglers recognize species by sight. When you clear a puzzle,
-the completion card shows the fish in full color with a **"How to know it"** list of field marks —
-the defining features you'd use to identify it on the water — plus its common and scientific name.
-Everything you've landed is saved in the **Field Guide** (top-right), so you can review the species
-and their features any time. The completion card waits for you: study the fish, then tap **Next fish**.
+Angler's Arrows is built to help anglers recognize species by sight. The roster leads with fish
+you actually catch — bluegill, largemouth and smallmouth bass, crappie, yellow perch, channel
+catfish, rainbow trout — then moves to inshore species (redfish, spotted seatrout, flounder,
+sheepshead). Clearing a puzzle reveals a detailed field-guide illustration of the fish with a
+**"How to know it"** list of the features you'd use to identify one on the water, plus its common
+and scientific name. Everything you've landed is saved in the **Field Guide** (top-right); tap any
+caught species to study its illustration and field marks again. The completion screen waits for
+you — study first, then tap **Next fish**.
+
+## Notes on this build
+- **Fullscreen:** a toggle sits at the top-right. Real fullscreen works on desktop and Android
+  browsers; on iPhone/iPad Safari the Fullscreen API isn't available, so the toggle switches to an
+  immersive layout instead — for true fullscreen on iOS, add the app to your Home Screen (it runs
+  standalone). Launching from the splash requests fullscreen automatically where supported.
+- **Try Again:** after six blocked taps on a single fish, the game offers a fresh start on that puzzle.
+- **Arrows:** every puzzle is solvable in any valid order and can't dead-end. Arrows are spaced out
+  (no stubby pieces, no back-to-back double-headed lines) and blocking chains make ordering matter.
+- **Art:** the fish are original detailed vector illustrations (not photographs). If you ever want
+  true photos, public-domain sources like the USFWS Duane Raver plates are an option to license/embed.
 
 ## Files
 - `index.html` — the whole game (no dependencies, works offline)
