@@ -62,6 +62,21 @@ from Wikimedia Commons (preferring Duane Raver public-domain plates), previews t
 `images/fish/CREDITS.txt`, and zips everything. Unzip at the app root so files land in `images/fish/`.
 (`tools/fetch_fish_photos.py` is a plain-Python version of the same.)
 
+
+### Option B — download the FWS / Raver scans by hand (most reliable)
+On **fws.gov**, open each species page (Species search), and on the image use **Download**. The credit
+reads "Raver, Duane" and licence "Public Domain." Save each as the exact filename below into
+`images/fish/` (side-profile scans work best):
+
+  bluegill.jpg  largemouth-bass.jpg  smallmouth-bass.jpg  black-crappie.jpg
+  yellow-perch.jpg  channel-catfish.jpg  rainbow-trout.jpg  redfish.jpg  (FWS: "Red drum")
+  spotted-seatrout.jpg  striped-bass.jpg  flounder.jpg  (FWS: "Southern flounder")  sheepshead.jpg
+
+The app removes the plate's background automatically, shapes the puzzle to that fish's outline, shows
+the scan **ghosted under the arrows**, and **materializes** it when you finish the level. Add a
+`CREDITS.txt` in `images/fish/` (the notebook writes one) and it shows on the in-app About screen.
+Public-domain images need no attribution, but listing Duane Raver / USFWS is good practice.
+
 ### Attribution & the About screen
 Tap **Your Catch → the "i" (About)** button. The About screen auto-loads `images/fish/CREDITS.txt`
 and displays it, so credits live in one place. Public-domain art needs no credit; CC-BY art is

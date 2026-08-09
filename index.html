@@ -34,7 +34,7 @@
     animation:rise linear infinite;opacity:0}
   @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.4}80%{opacity:.3}100%{transform:translateY(-108vh) translateX(var(--drift,0));opacity:0}}
 
-  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;
+  .wrap{position:relative;z-index:1;max-width:min(94vw,700px);margin:0 auto;
     padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 18px);
     min-height:100%;display:flex;flex-direction:column}
 
@@ -101,6 +101,7 @@
   .overlay.show{opacity:1;visibility:visible}
   #detail{z-index:90}
   #about{z-index:92}
+  body.tapguard .board, body.tapguard .controls, body.tapguard .guide-scroll{pointer-events:none !important}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
   .fishwrap{width:min(74vw,300px);margin-bottom:-4px;z-index:2}
   .fishwrap .fish{width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.5));animation:sway 5s ease-in-out infinite}
@@ -237,7 +238,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="v10";
+const APP_VERSION="v11";
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -441,7 +442,9 @@ function rasterizeFromSVG(idx, cols){
           for(let yy=0;yy<SS;yy++)for(let xx=0;xx<SS;xx++){ const px=((r*SS+yy)*cv.width+(c*SS+xx))*4, al=data[px+3];
             if(al>20){ ar+=data[px]*al; ag+=data[px+1]*al; ab+=data[px+2]*al; aa+=al; } }
           if(aa/(SS*SS*255)>0.32) cells.set(r+","+c,`rgb(${Math.round(ar/aa)},${Math.round(ag/aa)},${Math.round(ab/aa)})`); }
-        resolve(cells.size<10?fallbackFish(rows,cols):{rows,cols,cells});
+        if(cells.size<10) return resolve(fallbackFish(rows,cols));
+        let art=null; try{ art=cv.toDataURL("image/png"); }catch(e){}
+        resolve({rows,cols,cells,art});
       }catch(e){ resolve(fallbackFish(rows,cols)); } };
     img.onerror=()=>resolve(fallbackFish(rows,cols)); img.src=url;
   });
@@ -454,7 +457,7 @@ function rasterizeFromImage(img, cols){
   let data; try{ data=ctx.getImageData(0,0,W,H); }catch(e){ return null; }   // cross-origin taint -> fall back
   const px=data.data;
   let br=0,bg=0,bb=0; for(const [x,y] of [[0,0],[W-1,0],[0,H-1],[W-1,H-1]]){ const i=(y*W+x)*4; br+=px[i];bg+=px[i+1];bb+=px[i+2]; } br/=4;bg/=4;bb/=4;
-  const T2=46*46, isBg=(i)=>{ const dr=px[i]-br,dg=px[i+1]-bg,db=px[i+2]-bb; return dr*dr+dg*dg+db*db<T2; };
+  const T2=60*60, isBg=(i)=>{ const dr=px[i]-br,dg=px[i+1]-bg,db=px[i+2]-bb; return dr*dr+dg*dg+db*db<T2; };
   const bgm=new Uint8Array(W*H), st=[]; const push=(p)=>{ if(!bgm[p]&&isBg(p*4)){ bgm[p]=1; st.push(p); } };
   for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=0;y<H;y++){ push(y*W); push(y*W+W-1); }
   while(st.length){ const p=st.pop(), x=p%W, y=(p/W)|0; if(x>0)push(p-1); if(x<W-1)push(p+1); if(y>0)push(p-W); if(y<H-1)push(p+W); }
@@ -502,10 +505,14 @@ function generatePieces(cellsSet,rows,cols){
           const forbidden=rayCellSet(rows,cols,r,c,d);
           const body=[[r,c]]; const bset=new Set([r+","+c]); let cur=[r,c];
           for(let step=0; step<MAXLEN-1; step++){
-            const nbrs=[];
+            const nbrs=[], ck=cur[0]+","+cur[1];
             for(const nd of DK){ if(nd===d && step===0) continue;
               const [ndr,ndc]=DIRS[nd]; const nr=cur[0]+ndr, nc=cur[1]+ndc, nk=nr+","+nc;
-              if(cellsSet.has(nk)&&!occ.has(nk)&&!bset.has(nk)&&!forbidden.has(nk)) nbrs.push([nr,nc,nk]); }
+              if(!cellsSet.has(nk)||occ.has(nk)||bset.has(nk)||forbidden.has(nk)) continue;
+              let selfTouch=false;
+              for(const [ar,ac] of [[-1,0],[1,0],[0,-1],[0,1]]){ const ak=(nr+ar)+","+(nc+ac); if(bset.has(ak)&&ak!==ck){ selfTouch=true; break; } }
+              if(selfTouch) continue;
+              nbrs.push([nr,nc,nk]); }
             if(!nbrs.length) break;
             shuffle(nbrs); const [nr,nc,nk]=nbrs[0]; body.push([nr,nc]); bset.add(nk); cur=[nr,nc];
           }
@@ -525,6 +532,7 @@ function generatePieces(cellsSet,rows,cols){
 
 /* ---------- state & board ---------- */
 const el=id=>document.getElementById(id);
+let _gT=null; function guard(ms){ document.body.classList.add("tapguard"); clearTimeout(_gT); _gT=setTimeout(()=>document.body.classList.remove("tapguard"), ms||430); }
 const board=el("board"); let S=null; const cellDiv=new Map();
 function starPath(){ return `<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18.9 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>`; }
 function starsSVG(n,cls){ let o=""; for(let i=0;i<3;i++) o+=`<svg class="${i<n?(cls||'on'):''}" viewBox="0 0 24 24">${starPath()}</svg>`; return o; }
@@ -533,6 +541,7 @@ function renderHeaderStars(best){ const w=el("stars"); w.innerHTML="";
     const svg=s.firstChild; svg.classList.add("s"); if(i<best) svg.classList.add("on"); w.appendChild(svg); } }
 
 async function startLevel(i){
+  guard();
   el("level").textContent="Level "+String(i+1).padStart(2,"0");
   renderHeaderStars(Number(store.get("aa_stars_"+i)||0));
   el("hintbar").textContent="Surfacing the next puzzle…"; el("bar").style.width="0%";
@@ -588,7 +597,7 @@ function onTap(pc,g){
     g.classList.remove("shake"); void g.getBoundingClientRect(); g.classList.add("shake");
     S.blocked++; if(navigator.vibrate) navigator.vibrate(16);
     el("hintbar").textContent="Blocked — its way off the board is covered. Clear that lane first.";
-    if(S.blocked%6===0) el("tryagain").classList.add("show");
+    if(S.blocked%6===0){ guard(); el("tryagain").classList.add("show"); }
     return;
   }
   pc.alive=false; for(const [r,c] of pc.cells) S.occ.delete(r+","+c);
@@ -601,10 +610,26 @@ function onTap(pc,g){
   el("hintbar").textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
   if(S.remaining===0){ S.won=true; setTimeout(win,540); }
 }
-function flyOff(pc,g){ const [dr,dc]=DIRS[pc.dir];
-  g.style.transition="transform .5s cubic-bezier(.45,0,.75,.3), opacity .18s ease .34s";
-  requestAnimationFrame(()=>{ g.style.transform=`translate(${(dc*S.cols*1.5).toFixed(1)}px, ${(dr*S.rows*1.5).toFixed(1)}px)`; g.style.opacity="0"; });
-  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); },520); }
+function flyOff(pc,g){
+  const [dr,dc]=DIRS[pc.dir];
+  const shaft=g.querySelector(".shaft"), hit=g.querySelector(".hit"), head=g.querySelector(".head");
+  const pts=pc.cells.map(([r,c])=>[c+0.5,r+0.5]);
+  let bodyLen=0; for(let i=1;i<pts.length;i++) bodyLen+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+  const hx=pts[pts.length-1][0], hy=pts[pts.length-1][1], D=Math.max(S.cols,S.rows)*1.7;
+  const full="M "+pts.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join(" L ")+` L ${(hx+dc*D).toFixed(2)} ${(hy+dr*D).toFixed(2)}`;
+  const total=bodyLen+D, dur=560, dash=`${bodyLen.toFixed(2)} ${(total+2).toFixed(2)}`;
+  if(shaft){ shaft.setAttribute("d",full); shaft.style.strokeDasharray=dash; shaft.style.strokeDashoffset="0"; shaft.getBBox && shaft.getBBox(); shaft.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(.4,0,.7,.22)`; }
+  if(hit){ hit.setAttribute("d",full); hit.style.strokeDasharray=dash; hit.style.strokeDashoffset="0"; }
+  if(head){ head.style.transition=`transform ${dur}ms cubic-bezier(.4,0,.7,.22)`; }
+  g.style.transition=`opacity .2s ease ${dur-180}ms`;
+  requestAnimationFrame(()=>{
+    if(shaft) shaft.style.strokeDashoffset=`${(-D).toFixed(2)}`;
+    if(hit) hit.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(.4,0,.7,.22)`, hit.style.strokeDashoffset=`${(-D).toFixed(2)}`;
+    if(head) head.style.transform=`translate(${(dc*D).toFixed(2)}px, ${(dr*D).toFixed(2)}px)`;
+    g.style.opacity="0";
+  });
+  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+40);
+}
 function updateProgress(){ el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
 function updateButtons(){ el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
 
@@ -645,16 +670,17 @@ function win(){
       <div class="earned">${starsSVG(earned)}</div><div class="caught">Species identified</div>
       <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta">${cta}</div></div>`;
-    el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
+    guard(); el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
     if(last) el("againBtn").onclick=()=>startLevel(0);
     else{ el("nextBtn").onclick=()=>startLevel(S.level+1); el("replayBtn").onclick=()=>startLevel(S.level); }
   };
   if(S.ghost) setTimeout(show, 820); else show();
 }
-function hideReveal(){ el("reveal").classList.remove("show"); }
+function hideReveal(){ guard(); el("reveal").classList.remove("show"); }
 
 /* ---------- field guide ---------- */
 function openGuide(){
+  guard();
   const caught=Number(store.get("aa_progress")||0); const scroll=el("guideScroll"); scroll.innerHTML="";
   FISH.forEach((fish,i)=>{ const got=i<caught; const c=document.createElement("div"); c.className="gcard"+(got?"":" locked");
     if(got){ c.innerHTML=`<div class="thumb" data-i="${i}"></div><div class="info"><h3>${fish.name}</h3>
@@ -666,8 +692,9 @@ function openGuide(){
   scroll.querySelectorAll(".thumb[data-i]").forEach(t=>mountFish(t,+t.dataset.i));
   el("guide").classList.add("show");
 }
-function closeGuide(){ el("guide").classList.remove("show"); }
+function closeGuide(){ guard(); el("guide").classList.remove("show"); }
 function openAbout(){
+  guard();
   const box=el("aboutCredits"); box.textContent="Loading\u2026";
   const tryF=(u)=>fetch(u,{cache:"no-store"}).then(r=>r.ok?r.text():Promise.reject()).catch(()=>null);
   tryF("images/fish/CREDITS.txt").then(t=>t||tryF("tools/CREDITS.txt")).then(t=>{
@@ -676,12 +703,12 @@ function openAbout(){
   });
   el("about").classList.add("show");
 }
-function openDetail(i){ const fish=FISH[i];
+function openDetail(i){ guard(); const fish=FISH[i];
   el("detailCard").innerHTML=`<div class="fishwrap" id="detailFish"></div><div class="panel">
       <div class="caught">Field guide</div><h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
       ${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta"><button class="btn primary" id="detailClose">Close</button></div></div>`;
-  el("detail").classList.add("show"); mountFish(el("detailFish"),i); el("detailClose").onclick=()=>el("detail").classList.remove("show");
+  el("detail").classList.add("show"); mountFish(el("detailFish"),i); el("detailClose").onclick=()=>{ guard(); el("detail").classList.remove("show"); };
 }
 
 /* ---------- fullscreen (real where supported, immersive fallback for iOS) ---------- */
@@ -697,9 +724,9 @@ function toggleFS(){ if(fsSupported()){ if(fsActive()) exitFS(); else enterFS();
 
 el("undoBtn").onclick=undo; el("resetBtn").onclick=reset; el("hintBtn").onclick=hint;
 el("catchBtn").onclick=openGuide; el("guideClose").onclick=closeGuide; el("fsBtn").onclick=toggleFS;
-el("aboutBtn").onclick=openAbout; el("aboutClose").onclick=()=>el("about").classList.remove("show");
-el("taQuit").onclick=()=>{ el("tryagain").classList.remove("show"); reset(); el("splash").classList.remove("hide"); };
-el("taReset").onclick=()=>{ el("tryagain").classList.remove("show"); reset(); };
+el("aboutBtn").onclick=openAbout; el("aboutClose").onclick=()=>{ guard(); el("about").classList.remove("show"); };
+el("taQuit").onclick=()=>{ guard(); el("tryagain").classList.remove("show"); reset(); el("splash").classList.remove("hide"); };
+el("taReset").onclick=()=>{ guard(); el("tryagain").classList.remove("show"); reset(); };
 el("playBtn").onclick=()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); };
 
 /* bubbles */
