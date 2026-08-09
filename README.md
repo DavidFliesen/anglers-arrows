@@ -32,6 +32,30 @@ and scientific name. Everything you've landed is saved in the **Field Guide** (t
 caught species to study its illustration and field marks again. The completion screen waits for
 you — study first, then tap **Next fish**.
 
+## Real fish photos (recommended for credibility)
+The reveal card and Field Guide will use a **real photo** for any species that has one.
+Each fish looks for `images/fish/<slug>.jpg` (slugs listed in `images/fish/README.txt`).
+If the file is present it shows the photo; if not, it falls back to the drawn illustration.
+Photos are cached for offline use automatically the first time they load.
+
+**Where to get properly-licensed images**
+- **USFWS "Duane Raver" fish illustrations** — the realistic paintings used on most US
+  state fishing regulations. Public domain, and the gold standard for fish ID credibility.
+  (USFWS National Digital Library: digitalmedia.fws.gov; many are also on Wikimedia Commons.)
+- **NOAA Photo Library** — public-domain photographs.
+- **Wikimedia Commons** — large database, but licences vary per image; filter to
+  Public Domain / CC0 / CC BY and keep attribution.
+- **iNaturalist / GBIF APIs** — real photos, per-image CC licences (attribution required).
+- Note: **FishBase** has images but they're contributor-copyrighted — not free to redistribute.
+
+There is no clean "pip install fish photos" library with per-species, redistributable images;
+the practical route is to pull from one of the public-domain sources above and bundle the files.
+
+**Auto-populate:** run `tools/fetch_fish_photos.py` on a machine with internet — it queries
+Wikimedia Commons for each species, downloads the best freely-licensed image to
+`images/fish/`, and writes `tools/CREDITS.txt` with author + licence for each. Review the
+results, swap any you don't like, and keep CREDITS.txt with the app to honor CC-BY licences.
+
 ## Notes on this build
 - **Fullscreen:** a toggle sits at the top-right. Real fullscreen works on desktop and Android
   browsers; on iPhone/iPad Safari the Fullscreen API isn't available, so the toggle switches to an

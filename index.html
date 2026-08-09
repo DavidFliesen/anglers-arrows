@@ -38,23 +38,16 @@
     padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 18px);
     min-height:100%;display:flex;flex-direction:column}
 
-  header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .brand{display:flex;align-items:center;gap:12px;line-height:1;min-width:0}
-  .brand .mark{width:56px;height:56px;border-radius:50%;flex:0 0 56px;box-shadow:0 3px 12px rgba(0,0,0,.5)}
-  .brandtext{display:flex;flex-direction:column;min-width:0}
-  .brand .eyebrow{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--aqua);font-weight:800;margin-bottom:5px}
-  .brand h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
-  .meta{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:0 0 auto}
-  .metatop{display:flex;gap:8px;align-items:center}
-  .icbtn{width:34px;height:34px;border-radius:11px;border:1px solid rgba(169,192,224,.28);background:rgba(5,22,29,.4);
-    color:var(--foam);display:grid;place-items:center;cursor:pointer;flex:0 0 34px}
-  .icbtn:active{transform:translateY(1px)}
-  .icbtn svg{width:17px;height:17px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .guide-btn{display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(5,22,29,.4);border:1px solid rgba(169,192,224,.28);
-    color:var(--foam);font-family:var(--font);font-weight:800;font-size:11px;padding:0 11px;height:34px;border-radius:11px;cursor:pointer}
-  .guide-btn:active{transform:translateY(1px)}
-  .guide-btn svg{width:14px;height:14px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .level{font-family:var(--mono);font-size:12px;color:var(--mist)}
+  header{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:2px}
+  .fs-toggle{position:absolute;top:0;right:0;width:54px;height:54px;border-radius:16px;border:1px solid rgba(169,192,224,.3);
+    background:rgba(5,22,29,.45);color:var(--foam);display:grid;place-items:center;cursor:pointer}
+  .fs-toggle:active{transform:translateY(1px)}
+  .fs-toggle svg{width:30px;height:30px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .brand{display:flex;flex-direction:column;align-items:center}
+  .brand .mark{width:clamp(140px,44vw,210px);height:auto;border-radius:50%;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .meta{display:flex;flex-direction:row;align-items:center;gap:12px}
+  .level{font-family:var(--mono);font-size:13px;color:var(--mist)}
   .stars{display:flex;gap:3px}
   .stars svg{width:16px;height:16px}
   .stars .s{fill:rgba(255,255,255,.16);stroke:rgba(255,255,255,.3);stroke-width:1}
@@ -99,14 +92,17 @@
   .tool.hint .ic{background:linear-gradient(180deg,#ffd34d,#ff9f1c)}
   .tool.undo .ic{background:linear-gradient(180deg,#8fd6ff,#2ec6e6)}
   .tool.reset .ic{background:linear-gradient(180deg,#b69bff,#7a5cff)}
+  .tool.catch .ic{background:linear-gradient(180deg,#5fe0b0,#1bbf94)}
 
   /* overlays: opaque so the board never shows through the info */
   .overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;
     background:linear-gradient(180deg,#0a2a55,#00102e 85%);opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s}
   .overlay.show{opacity:1;visibility:visible}
+  #detail{z-index:90}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
   .fishwrap{width:min(74vw,300px);margin-bottom:-4px;z-index:2}
   .fishwrap .fish{width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.5));animation:sway 5s ease-in-out infinite}
+  .fishwrap .fishphoto{width:100%;height:auto;border-radius:18px;box-shadow:0 18px 30px rgba(0,0,0,.55);display:block}
   @keyframes sway{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
   .panel{width:100%;background:var(--panel);border:1px solid rgba(169,192,224,.16);border-radius:22px;
     padding:16px 18px 18px;box-shadow:0 16px 40px rgba(0,0,0,.45);text-align:center}
@@ -153,6 +149,7 @@
   .gcard.locked{background:rgba(255,255,255,.05);box-shadow:none;border:1px dashed rgba(169,192,224,.24);cursor:default}
   .gcard .thumb{width:104px;height:74px;flex:0 0 104px;display:grid;place-items:center}
   .gcard .thumb svg{width:100%;height:100%}
+  .gcard .thumb .fishphoto{width:100%;height:100%;object-fit:cover;border-radius:12px;box-shadow:none}
   .gcard.locked .thumb{color:var(--mist);font-size:28px;font-weight:800;opacity:.5}
   .gcard .info{min-width:0}
   .gcard .info h3{margin:0;font-size:17px;font-weight:800;color:var(--ink)}
@@ -170,10 +167,8 @@
   .splash .play{margin-top:26px;max-width:240px}
 
   /* immersive (fallback fullscreen for iOS Safari) */
-  body.immersive .brandtext,body.immersive .eyebrow{display:none}
-  body.immersive .brand .mark{width:40px;height:40px;flex-basis:40px}
   body.immersive .wrap{padding-top:calc(env(safe-area-inset-top) + 6px)}
-  body.immersive .board-shell{margin-top:10px}
+  body.immersive .board-shell{margin-top:8px}
 
   @media (max-width:360px){.brand h1{font-size:18px}.brand .mark{width:46px;height:46px;flex-basis:46px}.panel h2{font-size:25px}.marks li{font-size:14.5px}}
   @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
@@ -192,20 +187,11 @@
 
 <div class="wrap">
   <header>
-    <div class="brand">
-      <img class="mark" src="icons/mark-96.png" alt="" width="56" height="56" />
-      <div class="brandtext"><span class="eyebrow">Fish Arrow Puzzles</span><h1>Angler's Arrows</h1></div>
-    </div>
-    <div class="meta">
-      <div class="metatop">
-        <button class="icbtn icbtn" id="fsBtn" type="button" aria-label="Toggle fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
-        <button class="guide-btn" id="guideBtn" type="button" aria-label="Open field guide">
-          <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M9 3v14"/></svg>Field Guide</button>
-      </div>
-      <span class="level" id="level">Level 01</span>
-      <span class="stars" id="stars"></span>
-    </div>
+    <button class="fs-toggle" id="fsBtn" type="button" aria-label="Toggle fullscreen">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
+    <h1 class="sr">Angler's Arrows</h1>
+    <div class="brand"><img class="mark" src="icons/icon-512.png" alt="Angler's Arrows" /></div>
+    <div class="meta"><span class="level" id="level">Level 01</span><span class="stars" id="stars"></span></div>
   </header>
 
   <div class="board-shell"><div class="board-card"><div class="board" id="board" role="grid" aria-label="Fish made of arrows"></div></div></div>
@@ -217,6 +203,7 @@
     <button class="tool hint" id="hintBtn" type="button" aria-label="Hint"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg></span>Hint</button>
     <button class="tool undo" id="undoBtn" type="button" aria-label="Undo"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span>Undo</button>
     <button class="tool reset" id="resetBtn" type="button" aria-label="Reset"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></span>Reset</button>
+    <button class="tool catch" id="catchBtn" type="button" aria-label="Your Catch field guide"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M9 3v14"/></svg></span>Your Catch</button>
   </div>
 </div>
 
@@ -224,8 +211,8 @@
 <div class="overlay" id="detail" role="dialog" aria-modal="true" aria-label="Species detail"><div class="card" id="detailCard"></div></div>
 
 <div class="mini" id="tryagain" role="dialog" aria-modal="true">
-  <div class="box"><h3>Six blocked taps</h3><p>An arrow only moves if its path to the edge is clear. Want a fresh start on this fish?</p>
-  <div class="row"><button class="btn" id="taKeep" type="button">Keep going</button><button class="btn primary" id="taReset" type="button">Try again</button></div></div>
+  <div class="box"><h3>Six blocked taps</h3><p>An arrow only slides off if its path to the edge is clear. Restart this fish, or head back to the start screen?</p>
+  <div class="row"><button class="btn" id="taQuit" type="button">Quit</button><button class="btn primary" id="taReset" type="button">Try again</button></div></div>
 </div>
 
 <div class="guide-panel" id="guide" role="dialog" aria-modal="true" aria-label="Field guide">
@@ -407,6 +394,8 @@ const FISH = [
    fact:"Those flat teeth crunch barnacles and crabs — fish structure and pilings to find them.",
    spec:{shape:"panfish",tail:"fan",dorsal:"spiny2",scales:1,bars:6,barOpacity:0.8,a:88,b:56,back:"#8f9298",mid:"#c7cace",belly:"#eef0f2",finColor:"#5a5e63",barColor:"#20242a",eyeRing:"#8a8d92",aria:"barred sheepshead"}},
 ];
+const SLUGS=["bluegill","largemouth-bass","smallmouth-bass","black-crappie","yellow-perch","channel-catfish","rainbow-trout","redfish","spotted-seatrout","striped-bass","flounder","sheepshead"];
+FISH.forEach((f,i)=>{ f.slug=SLUGS[i]; f.img="images/fish/"+SLUGS[i]+".jpg"; });
 
 function levelWidth(i){ return 24 + Math.round(i * 8 / (FISH.length-1)); } // 24..32
 const MINLEN=3, MAXLEN=7;
@@ -585,6 +574,9 @@ function clearHints(){ board.querySelectorAll(".arrow.hint").forEach(a=>a.classL
 
 function starsFor(){ return Math.max(1, 3-(S.undos+Math.floor(S.blocked/3))); }
 function marksBlock(fish){ return `<div class="marks"><h3>How to know it</h3><ul>${fish.marks.map(m=>`<li>${m}</li>`).join("")}</ul></div>`; }
+function mountFish(node,i){ const fish=FISH[i]; node.innerHTML=fishSVG(fish.spec);
+  if(fish.img){ const im=new Image(); im.className="fishphoto"; im.alt=fish.name+" photo";
+    im.onload=()=>{ node.innerHTML=""; node.appendChild(im); }; im.onerror=()=>{}; im.src=fish.img; } }
 
 function win(){
   const fish=FISH[S.level], earned=starsFor();
@@ -595,11 +587,11 @@ function win(){
   const last=S.level>=FISH.length-1;
   const cta = last ? `<button class="btn primary" id="againBtn">Dive again</button>`
     : `<button class="btn" id="replayBtn">Replay</button><button class="btn primary" id="nextBtn">Next fish</button>`;
-  el("revealCard").innerHTML=`<div class="fishwrap">${fishSVG(fish.spec)}</div><div class="panel">
+  el("revealCard").innerHTML=`<div class="fishwrap" id="revealFish"></div><div class="panel">
       <div class="earned">${starsSVG(earned)}</div><div class="caught">Species identified</div>
       <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta">${cta}</div></div>`;
-  el("reveal").classList.add("show");
+  el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
   if(last) el("againBtn").onclick=()=>startLevel(0);
   else{ el("nextBtn").onclick=()=>startLevel(S.level+1); el("replayBtn").onclick=()=>startLevel(S.level); }
@@ -610,21 +602,22 @@ function hideReveal(){ el("reveal").classList.remove("show"); }
 function openGuide(){
   const caught=Number(store.get("aa_progress")||0); const scroll=el("guideScroll"); scroll.innerHTML="";
   FISH.forEach((fish,i)=>{ const got=i<caught; const c=document.createElement("div"); c.className="gcard"+(got?"":" locked");
-    if(got){ c.innerHTML=`<div class="thumb">${fishSVG(fish.spec)}</div><div class="info"><h3>${fish.name}</h3>
+    if(got){ c.innerHTML=`<div class="thumb" data-i="${i}"></div><div class="info"><h3>${fish.name}</h3>
         <div class="gsci">${fish.sci}</div><div class="gmark">${fish.marks[0]} · ${fish.marks[1]}</div><div class="tap">Tap to study ›</div></div>`;
       c.onclick=()=>openDetail(i);
     } else { c.innerHTML=`<div class="thumb">?</div><div class="info"><h3>Not yet caught</h3>
         <p>Clear level ${String(i+1).padStart(2,"0")} to add this species.</p></div>`; }
     scroll.appendChild(c); });
+  scroll.querySelectorAll(".thumb[data-i]").forEach(t=>mountFish(t,+t.dataset.i));
   el("guide").classList.add("show");
 }
 function closeGuide(){ el("guide").classList.remove("show"); }
 function openDetail(i){ const fish=FISH[i];
-  el("detailCard").innerHTML=`<div class="fishwrap">${fishSVG(fish.spec)}</div><div class="panel">
+  el("detailCard").innerHTML=`<div class="fishwrap" id="detailFish"></div><div class="panel">
       <div class="caught">Field guide</div><h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
       ${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta"><button class="btn primary" id="detailClose">Close</button></div></div>`;
-  el("detail").classList.add("show"); el("detailClose").onclick=()=>el("detail").classList.remove("show");
+  el("detail").classList.add("show"); mountFish(el("detailFish"),i); el("detailClose").onclick=()=>el("detail").classList.remove("show");
 }
 
 /* ---------- fullscreen (real where supported, immersive fallback for iOS) ---------- */
@@ -639,8 +632,8 @@ function toggleFS(){ if(fsSupported()){ if(fsActive()) exitFS(); else enterFS();
 ["fullscreenchange","webkitfullscreenchange"].forEach(ev=>document.addEventListener(ev,()=>{ document.body.classList.toggle("immersive", !!fsActive()); applyFSIcon(); }));
 
 el("undoBtn").onclick=undo; el("resetBtn").onclick=reset; el("hintBtn").onclick=hint;
-el("guideBtn").onclick=openGuide; el("guideClose").onclick=closeGuide; el("fsBtn").onclick=toggleFS;
-el("taKeep").onclick=()=>el("tryagain").classList.remove("show");
+el("catchBtn").onclick=openGuide; el("guideClose").onclick=closeGuide; el("fsBtn").onclick=toggleFS;
+el("taQuit").onclick=()=>{ el("tryagain").classList.remove("show"); reset(); el("splash").classList.remove("hide"); };
 el("taReset").onclick=()=>{ el("tryagain").classList.remove("show"); reset(); };
 el("playBtn").onclick=()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); };
 
