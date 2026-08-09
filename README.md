@@ -32,40 +32,45 @@ and scientific name. Everything you've landed is saved in the **Field Guide** (t
 caught species to study its illustration and field marks again. The completion screen waits for
 you — study first, then tap **Next fish**.
 
-## Real fish photos (recommended for credibility)
-The reveal card and Field Guide will use a **real photo** for any species that has one.
-Each fish looks for `images/fish/<slug>.jpg` (slugs listed in `images/fish/README.txt`).
-If the file is present it shows the photo; if not, it falls back to the drawn illustration.
-Photos are cached for offline use automatically the first time they load.
 
-**Where to get properly-licensed images**
-- **USFWS "Duane Raver" fish illustrations** — the realistic paintings used on most US
-  state fishing regulations. Public domain, and the gold standard for fish ID credibility.
-  (USFWS National Digital Library: digitalmedia.fws.gov; many are also on Wikimedia Commons.)
+
+
+## Real fish artwork (photos / illustrations)
+The reveal, the Field Guide, **and the puzzle itself** use a real image for any species that has one.
+Each fish looks for `images/fish/<slug>.jpg` (slugs in `images/fish/README.txt`).
+
+When an image is present, the app:
+- **shapes the puzzle from the artwork** — it removes the background, and the arrows fill the real
+  silhouette and proportions of that fish (not the drawn illustration);
+- shows the artwork **ghosted underneath** the arrows while you play, and on completion it
+  **materializes** from ghost to full;
+- uses the photo in the reveal card and the Field Guide.
+If no image is present, everything falls back to the built-in vector illustration automatically.
+
+### Where to get properly-licensed images
+- **USFWS / Duane Raver illustrations** — realistic public-domain plates used on most US state fishing
+  regs; the most credible option. **No attribution legally required** (an About credit is good practice).
 - **NOAA Photo Library** — public-domain photographs.
-- **Wikimedia Commons** — large database, but licences vary per image; filter to
-  Public Domain / CC0 / CC BY and keep attribution.
-- **iNaturalist / GBIF APIs** — real photos, per-image CC licences (attribution required).
-- Note: **FishBase** has images but they're contributor-copyrighted — not free to redistribute.
+- **Wikimedia Commons / iNaturalist / GBIF** — real images, per-item CC licences (attribution required
+  for CC-BY; a credits list satisfies it — no per-image stamp needed).
+There is no clean "pip install" library of redistributable per-species fish photos; pull from the
+public-domain sources above and bundle the files.
 
-There is no clean "pip install fish photos" library with per-species, redistributable images;
-the practical route is to pull from one of the public-domain sources above and bundle the files.
+### Auto-populate (Colab)
+Open **`tools/fetch_raver_fish.ipynb`** in Google Colab and Run All. It pulls freely-licensed images
+from Wikimedia Commons (preferring Duane Raver public-domain plates), previews them, writes
+`images/fish/CREDITS.txt`, and zips everything. Unzip at the app root so files land in `images/fish/`.
+(`tools/fetch_fish_photos.py` is a plain-Python version of the same.)
 
-**Auto-populate:** run `tools/fetch_fish_photos.py` on a machine with internet — it queries
-Wikimedia Commons for each species, downloads the best freely-licensed image to
-`images/fish/`, and writes `tools/CREDITS.txt` with author + licence for each. Review the
-results, swap any you don't like, and keep CREDITS.txt with the app to honor CC-BY licences.
+### Attribution & the About screen
+Tap **Your Catch → the "i" (About)** button. The About screen auto-loads `images/fish/CREDITS.txt`
+and displays it, so credits live in one place. Public-domain art needs no credit; CC-BY art is
+covered by that list. You do **not** need a credit stamped on each image.
 
-## Notes on this build
-- **Fullscreen:** a toggle sits at the top-right. Real fullscreen works on desktop and Android
-  browsers; on iPhone/iPad Safari the Fullscreen API isn't available, so the toggle switches to an
-  immersive layout instead — for true fullscreen on iOS, add the app to your Home Screen (it runs
-  standalone). Launching from the splash requests fullscreen automatically where supported.
-- **Try Again:** after six blocked taps on a single fish, the game offers a fresh start on that puzzle.
-- **Arrows:** every puzzle is solvable in any valid order and can't dead-end. Arrows are spaced out
-  (no stubby pieces, no back-to-back double-headed lines) and blocking chains make ordering matter.
-- **Art:** the fish are original detailed vector illustrations (not photographs). If you ever want
-  true photos, public-domain sources like the USFWS Duane Raver plates are an option to license/embed.
+## Updates reach players automatically
+The service worker is **network-first for the page**, so when you deploy a new `index.html` to
+GitHub Pages, players get it on their next load (assets still cache for offline). After deploying,
+a reload or two fully swaps the cached copy.
 
 ## Files
 - `index.html` — the whole game (no dependencies, works offline)
