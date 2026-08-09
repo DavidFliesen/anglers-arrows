@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#00153d" />
+<meta name="description" content="Angler's Arrows — every puzzle is a fish built from arrows. Clear the arrows, learn the species by its features." />
+<title>Angler's Arrows — Fish Arrow Puzzles</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/favicon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  :root{
+    --abyss:#00102e; --deep:#08214a; --current:#0b2c5c;
+    --foam:#eef4fb; --mist:#9db4d6;
+    --aqua:#2ec6e6; --aqua-lo:#1c9fc4; --aqua-hi:#7fe3f5;
+    --catch:#ff9f1c; --catch-hot:#ff7a1a; --lime:#8fd63f;
+    --card:#eaf1fb; --card-2:#dce8f7; --ink:#12294a; --ink-soft:#2a4470;
+    --font:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:var(--font);color:var(--foam);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #123a72 0%, rgba(18,58,114,0) 55%),
+      linear-gradient(180deg, var(--current) 0%, var(--deep) 42%, #041a3e 72%, var(--abyss) 100%);
+    background-attachment:fixed;overflow-x:hidden;-webkit-user-select:none;user-select:none;
+  }
+  .bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .bubble{position:absolute;bottom:-40px;border-radius:50%;
+    background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.4), rgba(127,227,245,.06) 60%, transparent 70%);
+    animation:rise linear infinite;opacity:0}
+  @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.4}80%{opacity:.3}
+    100%{transform:translateY(-108vh) translateX(var(--drift,0));opacity:0}}
+
+  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 18px);
+    min-height:100%;display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:11px;line-height:1;min-width:0}
+  .brand .mark{width:42px;height:42px;border-radius:50%;flex:0 0 42px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+  .brandtext{display:flex;flex-direction:column;min-width:0}
+  .brand .eyebrow{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--aqua);font-weight:800;margin-bottom:5px}
+  .brand h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+  .meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+  .guide-btn{display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(5,22,29,.4);border:1px solid rgba(159,196,196,.24);
+    color:var(--foam);font-family:var(--font);font-weight:800;font-size:11px;letter-spacing:.02em;padding:6px 11px;border-radius:999px;cursor:pointer}
+  .guide-btn:active{transform:translateY(1px)}
+  .guide-btn svg{width:14px;height:14px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .level{font-family:var(--mono);font-size:12px;color:var(--mist)}
+  .stars{display:flex;gap:3px}
+  .stars svg{width:16px;height:16px}
+  .stars .s{fill:rgba(255,255,255,.16);stroke:rgba(255,255,255,.28);stroke-width:1}
+  .stars .s.on{fill:var(--catch);stroke:var(--catch-hot)}
+
+  .board-shell{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;margin:16px 0 0}
+  .board-card{width:100%;position:relative;background:linear-gradient(180deg,#f2f7ff,var(--card) 60%,var(--card-2));
+    border-radius:24px;padding:16px;box-shadow:0 20px 45px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.6);}
+  .board-card::before{content:"";position:absolute;inset:16px;border-radius:12px;pointer-events:none;
+    background-image:radial-gradient(rgba(18,41,74,.09) 1.5px, transparent 1.7px);
+    background-size:6% 6%;background-position:center;opacity:.9}
+  .board{position:relative;width:100%;display:grid;gap:0}
+  .cell{position:relative;border-radius:22%;background:transparent;transform:scale(.5);opacity:0;margin:9%;
+    transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s, background .3s ease}
+  .cell.lit{transform:scale(1);opacity:1}
+  .cell.pop{animation:pop .44s ease}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.4)}100%{transform:scale(1)}}
+
+  .arrow{position:relative;z-index:2;cursor:pointer;opacity:0;transform:scale(.6);}
+  .arrow.in{opacity:1;transform:none;transition:transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s}
+  .arrow svg{display:block;width:100%;height:100%;overflow:visible}
+  .arrow .stroke{stroke:var(--ink);stroke-width:.62;stroke-linecap:round;stroke-linejoin:round;fill:none}
+  .arrow .head{fill:var(--ink)}
+  .arrow .gloss{stroke:rgba(255,255,255,.18);stroke-width:.16;stroke-linecap:round;fill:none}
+  .arrow:not(.flying):active{transform:scale(.93)}
+  .arrow.flying{z-index:40}
+  .arrow.shake{animation:shake .4s ease}
+  @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}
+    30%,50%,70%{transform:translateX(-3px)}40%,60%{transform:translateX(3px)}}
+
+  .progress{height:7px;border-radius:999px;background:rgba(5,22,29,.4);border:1px solid rgba(159,196,196,.16);
+    overflow:hidden;margin:16px 2px 0}
+  .progress .bar{height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--aqua-hi),var(--aqua) 60%,var(--aqua-lo));transition:width .4s cubic-bezier(.2,.7,.2,1)}
+  .hintbar{margin-top:11px;text-align:center;font-size:12.5px;color:var(--mist);min-height:16px;padding:0 6px}
+
+  .controls{display:flex;gap:12px;margin-top:12px}
+  .tool{flex:1;border:0;cursor:pointer;font-family:var(--font);font-weight:800;font-size:13px;color:var(--foam);
+    background:linear-gradient(180deg,#12386f,#0c2650);border-radius:18px;padding:12px 8px 10px;
+    box-shadow:0 5px 0 #071b3c, 0 8px 16px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:5px;
+    transition:transform .1s ease, box-shadow .1s ease}
+  .tool:active{transform:translateY(4px);box-shadow:0 1px 0 #071b3c, 0 4px 10px rgba(0,0,0,.3)}
+  .tool:disabled{opacity:.45;cursor:default;transform:none;box-shadow:0 5px 0 #071b3c}
+  .tool:focus-visible{outline:3px solid var(--catch);outline-offset:2px}
+  .tool .ic{width:30px;height:30px;border-radius:12px;display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 2px 5px rgba(0,0,0,.25)}
+  .tool .ic svg{width:18px;height:18px;stroke:#0c2650;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .tool.hint .ic{background:linear-gradient(180deg,#ffd34d,#ff9f1c)}
+  .tool.undo .ic{background:linear-gradient(180deg,#8fd6ff,#2ec6e6)}
+  .tool.reset .ic{background:linear-gradient(180deg,#b69bff,#7a5cff)}
+
+  /* overlays */
+  .overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:22px;
+    background:radial-gradient(90% 70% at 50% 40%, rgba(11,44,92,.6), rgba(0,16,46,.96));
+    opacity:0;visibility:hidden;transition:opacity .45s ease, visibility .45s}
+  .overlay.show{opacity:1;visibility:visible}
+
+  .card{width:100%;max-width:410px;text-align:center;transform:translateY(24px) scale(.98);
+    transition:transform .55s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;align-items:center;
+    max-height:calc(100vh - 44px);overflow:auto}
+  .overlay.show .card{transform:none}
+  .card .fish{width:min(70vw,280px);height:auto;filter:drop-shadow(0 20px 28px rgba(0,0,0,.55));animation:sway 5s ease-in-out infinite}
+  @keyframes sway{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}
+  .card .earned{display:flex;gap:8px;margin:14px 0 2px}
+  .card .earned svg{width:32px;height:32px;fill:rgba(255,255,255,.14);stroke:rgba(255,255,255,.25)}
+  .card .earned svg.on{fill:var(--catch);stroke:var(--catch-hot);animation:star .5s ease backwards}
+  .card .earned svg.on:nth-child(2){animation-delay:.12s}.card .earned svg.on:nth-child(3){animation-delay:.24s}
+  @keyframes star{0%{transform:scale(0) rotate(-40deg);opacity:0}70%{transform:scale(1.25)}100%{transform:none;opacity:1}}
+  .card .caught{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--catch);font-weight:800;margin:12px 0 6px}
+  .card h2{font-size:28px;margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.05}
+  .card .sci{font-style:italic;color:var(--mist);font-size:14px;margin:6px 0 0}
+  .marks{width:100%;margin:16px 0 0;text-align:left;background:rgba(5,22,29,.35);border:1px solid rgba(159,196,196,.16);
+    border-radius:16px;padding:13px 15px}
+  .marks h3{margin:0 0 9px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--aqua);font-weight:800}
+  .marks li{list-style:none;display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.4;color:var(--foam);margin:0 0 7px}
+  .marks li:last-child{margin-bottom:0}
+  .marks li::before{content:"";flex:0 0 7px;width:7px;height:7px;border-radius:50%;margin-top:5px;
+    background:linear-gradient(180deg,var(--aqua-hi),var(--aqua-lo))}
+  .card .fact{color:var(--foam);opacity:.82;font-size:13px;line-height:1.5;margin:13px 0 0;max-width:340px}
+  .card .cta{margin-top:20px;width:100%;display:flex;gap:10px}
+  .btn{flex:1;border:1px solid rgba(159,196,196,.22);background:rgba(5,22,29,.4);color:var(--foam);
+    font-family:var(--font);font-weight:800;font-size:14px;padding:14px 10px;border-radius:15px;cursor:pointer;transition:transform .1s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(160deg,var(--catch),var(--catch-hot));color:#3a1c05;border-color:transparent;box-shadow:0 8px 20px rgba(255,138,92,.3)}
+  .tiny{font-size:12px;color:var(--mist);margin-top:10px}
+
+  /* field guide */
+  .guide-panel{position:fixed;inset:0;z-index:70;background:linear-gradient(180deg,#0b2c5c,#00102e 80%);
+    opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s;display:flex;flex-direction:column}
+  .guide-panel.show{opacity:1;visibility:visible}
+  .guide-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:calc(env(safe-area-inset-top) + 16px) 18px 12px;max-width:560px;margin:0 auto;width:100%}
+  .guide-head h2{margin:0;font-size:19px;font-weight:800}
+  .guide-head .sub{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--aqua);font-weight:800;margin-bottom:4px}
+  .x{width:38px;height:38px;border-radius:50%;border:1px solid rgba(159,196,196,.24);background:rgba(5,22,29,.4);
+    color:var(--foam);font-size:20px;cursor:pointer;display:grid;place-items:center;flex:0 0 38px}
+  .guide-scroll{overflow:auto;padding:6px 18px calc(env(safe-area-inset-bottom) + 24px);max-width:560px;margin:0 auto;width:100%}
+  .gcard{display:flex;gap:14px;align-items:center;background:#eaf1fb;border-radius:18px;padding:12px 14px;margin:0 0 12px;
+    box-shadow:0 10px 22px rgba(0,0,0,.28)}
+  .gcard.locked{background:rgba(255,255,255,.05);box-shadow:none;border:1px dashed rgba(159,196,196,.22)}
+  .gcard .thumb{width:92px;height:64px;flex:0 0 92px;display:grid;place-items:center}
+  .gcard .thumb svg{width:100%;height:100%}
+  .gcard.locked .thumb{color:var(--mist);font-size:26px;font-weight:800;opacity:.5}
+  .gcard .info{min-width:0}
+  .gcard .info h3{margin:0;font-size:16px;font-weight:800;color:var(--ink)}
+  .gcard.locked .info h3{color:var(--mist)}
+  .gcard .info .gsci{font-style:italic;color:#5a739e;font-size:12px;margin:2px 0 6px}
+  .gcard .info .gmark{font-size:12px;color:#2a4470;line-height:1.35}
+  .gcard.locked .info p{color:var(--mist);font-size:12.5px;margin:4px 0 0}
+
+  .splash{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:28px;
+    background:radial-gradient(90% 70% at 50% 36%, #123a72, #00102e 78%);transition:opacity .55s ease, visibility .55s}
+  .splash.hide{opacity:0;visibility:hidden}
+  .splash .inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:360px}
+  .splash img{width:min(66vw,250px);height:auto;filter:drop-shadow(0 20px 32px rgba(0,0,0,.55));animation:sway 5s ease-in-out infinite}
+  .splash p{color:var(--mist);font-size:14.5px;line-height:1.55;margin:20px 0 0}
+  .splash .play{margin-top:26px;max-width:230px}
+
+  @media (max-width:360px){.brand h1{font-size:18px}.brand .mark{width:36px;height:36px;flex-basis:36px}.card h2{font-size:24px}}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;animation-iteration-count:1 !important}
+    .arrow,.overlay,.card,.progress .bar,.cell,.splash,.guide-panel{transition-duration:.001ms !important}
+    .bubble{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles" aria-hidden="true"></div>
+
+<div class="splash" id="splash">
+  <div class="inner">
+    <img src="icons/icon-512.png" alt="Angler's Arrows" />
+    <p>Every puzzle is a fish built from arrows. Clear them all to surface the species — and learn to know it by its features.</p>
+    <button class="btn primary play" id="playBtn" type="button">Start fishing</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <img class="mark" src="icons/mark-96.png" alt="" width="42" height="42" />
+      <div class="brandtext"><span class="eyebrow">Fish Arrow Puzzles</span><h1>Angler's Arrows</h1></div>
+    </div>
+    <div class="meta">
+      <button class="guide-btn" id="guideBtn" type="button" aria-label="Open field guide">
+        <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M9 3v14"/></svg>Field Guide</button>
+      <span class="level" id="level">Level 01</span>
+      <span class="stars" id="stars"></span>
+    </div>
+  </header>
+
+  <div class="board-shell">
+    <div class="board-card"><div class="board" id="board" role="grid" aria-label="Fish made of arrows"></div></div>
+  </div>
+
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="hintbar" id="hintbar">Tap an arrow to send it swimming off — it slides away only if nothing blocks its path.</div>
+
+  <div class="controls">
+    <button class="tool hint" id="hintBtn" type="button" aria-label="Hint">
+      <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg></span>Hint</button>
+    <button class="tool undo" id="undoBtn" type="button" aria-label="Undo">
+      <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span>Undo</button>
+    <button class="tool reset" id="resetBtn" type="button" aria-label="Reset">
+      <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></span>Reset</button>
+  </div>
+</div>
+
+<div class="overlay" id="reveal" role="dialog" aria-modal="true" aria-label="Species revealed"><div class="card" id="revealCard"></div></div>
+
+<div class="guide-panel" id="guide" role="dialog" aria-modal="true" aria-label="Field guide">
+  <div class="guide-head">
+    <div><div class="sub">Angler's Arrows</div><h2>Field Guide</h2></div>
+    <button class="x" id="guideClose" aria-label="Close field guide">&times;</button>
+  </div>
+  <div class="guide-scroll" id="guideScroll"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- safe storage ---------- */
+const store = (() => {
+  let mem = {};
+  try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
+    return { get:(k)=>{try{return localStorage.getItem(k)}catch{return mem[k]??null}},
+             set:(k,v)=>{try{localStorage.setItem(k,v)}catch{mem[k]=v}} };
+  } catch { return { get:(k)=>mem[k]??null, set:(k,v)=>{mem[k]=v} }; }
+})();
+
+/* ---------- distinctive parametric fish ---------- */
+let uid = 0;
+const P=(n)=>+n.toFixed(1);
+function fishSVG(s){
+  const id="f"+(uid++);
+  const cx=110, cy=74, a=s.a??86, b=s.b??44;
+  const bill=s.bill||0, noseX=cx+a+bill;
+  const pedX=cx-0.82*a, pedH=(s.pedH??0.26)*b;
+  const headDrop=(s.head==="steep")?0.42*b:(s.head==="point"?-0.05*b:0.12*b);
+  const backHump=(s.dorsal==="long"||s.dorsal==="sail")?0.18*b:0;
+  const topBack=cy-b-backHump;
+  let top;
+  if(s.head==="steep"){
+    top=`M ${P(noseX)} ${P(cy+headDrop)} C ${P(cx+0.9*a)} ${P(cy-0.5*b)}, ${P(cx+0.7*a)} ${P(topBack)}, ${P(cx+0.35*a)} ${P(topBack)} C ${P(cx)} ${P(topBack)}, ${P(cx-0.5*a)} ${P(cy-0.8*b)}, ${P(pedX)} ${P(cy-pedH)}`;
+  } else if(s.head==="point"){
+    top=`M ${P(noseX)} ${P(cy+headDrop)} C ${P(cx+0.6*a)} ${P(cy-b)}, ${P(cx+0.1*a)} ${P(cy-b)}, ${P(cx-0.2*a)} ${P(cy-0.9*b)} C ${P(cx-0.45*a)} ${P(cy-0.8*b)}, ${P(cx-0.65*a)} ${P(cy-0.5*b)}, ${P(pedX)} ${P(cy-pedH)}`;
+  } else {
+    top=`M ${P(noseX)} ${P(cy+headDrop)} C ${P(cx+0.55*a)} ${P(cy-1.02*b)}, ${P(cx-0.1*a)} ${P(cy-b)}, ${P(cx-0.45*a)} ${P(cy-0.72*b)} C ${P(cx-0.6*a)} ${P(cy-0.6*b)}, ${P(cx-0.72*a)} ${P(cy-0.4*b)}, ${P(pedX)} ${P(cy-pedH)}`;
+  }
+  let bot;
+  if(s.profile==="tall"){
+    bot=`C ${P(cx-0.72*a)} ${P(cy+0.4*b)}, ${P(cx-0.5*a)} ${P(cy+1.15*b)}, ${P(cx)} ${P(cy+1.15*b)} C ${P(cx+0.4*a)} ${P(cy+1.12*b)}, ${P(cx+0.7*a)} ${P(cy+0.5*b)}, ${P(noseX)} ${P(cy+headDrop)} Z`;
+  } else {
+    bot=`C ${P(cx-0.72*a)} ${P(cy+0.4*b)}, ${P(cx-0.15*a)} ${P(cy+b)}, ${P(cx+0.2*a)} ${P(cy+0.96*b)} C ${P(cx+0.55*a)} ${P(cy+0.9*b)}, ${P(cx+0.85*a)} ${P(cy+0.5*b)}, ${P(noseX)} ${P(cy+headDrop)} Z`;
+  }
+  const body=top+" "+bot;
+  const tj=cx-0.82*a, tl=(s.tailLen??1.0);
+  let tail;
+  if(s.tail==="crescent"){
+    tail=`M ${P(tj)} ${P(cy-pedH)} C ${P(tj-0.5*a*tl)} ${P(cy-1.5*b)}, ${P(tj-0.62*a*tl)} ${P(cy-1.2*b)}, ${P(tj-0.34*a*tl)} ${P(cy)} C ${P(tj-0.62*a*tl)} ${P(cy+1.2*b)}, ${P(tj-0.5*a*tl)} ${P(cy+1.5*b)}, ${P(tj)} ${P(cy+pedH)} C ${P(tj-0.16*a)} ${P(cy+0.4*b)}, ${P(tj-0.16*a)} ${P(cy-0.4*b)}, ${P(tj)} ${P(cy-pedH)} Z`;
+  } else if(s.tail==="fan"){
+    tail=`M ${P(tj)} ${P(cy-pedH)} C ${P(tj-0.7*a*tl)} ${P(cy-1.25*b)}, ${P(tj-0.8*a*tl)} ${P(cy+1.25*b)}, ${P(tj)} ${P(cy+pedH)} Z`;
+  } else if(s.tail==="round"){
+    tail=`M ${P(tj)} ${P(cy-pedH)} C ${P(tj-0.55*a*tl)} ${P(cy-0.7*b)}, ${P(tj-0.55*a*tl)} ${P(cy+0.7*b)}, ${P(tj)} ${P(cy+pedH)} Z`;
+  } else if(s.tail==="truncate"){
+    tail=`M ${P(tj)} ${P(cy-pedH)} L ${P(tj-0.4*a*tl)} ${P(cy-0.7*b)} L ${P(tj-0.4*a*tl)} ${P(cy+0.7*b)} L ${P(tj)} ${P(cy+pedH)} Z`;
+  } else {
+    tail=`M ${P(tj)} ${P(cy-pedH)} L ${P(tj-0.62*a*tl)} ${P(cy-0.95*b)} L ${P(tj-0.30*a*tl)} ${P(cy)} L ${P(tj-0.62*a*tl)} ${P(cy+0.95*b)} L ${P(tj)} ${P(cy+pedH)} Z`;
+  }
+  const finFill=s.finColor||s.bodyBot;
+  let dorsal="";
+  if(s.dorsal==="long"||s.dorsal==="sail"){
+    const h=(s.dorsal==="sail")?1.1:0.55;
+    dorsal=`<path d="M ${P(cx+0.4*a)} ${P(cy-0.75*b)} C ${P(cx+0.1*a)} ${P(cy-(1+h)*b)}, ${P(cx-0.4*a)} ${P(cy-(1+h)*b)}, ${P(pedX+0.06*a)} ${P(cy-pedH-2)} L ${P(cx-0.4*a)} ${P(cy-0.72*b)} Z" fill="${finFill}"/>`;
+  } else if(s.dorsal==="tall"){
+    dorsal=`<path d="M ${P(cx+0.35*a)} ${P(cy-0.8*b)} Q ${P(cx+0.05*a)} ${P(cy-1.95*b)}, ${P(cx-0.2*a)} ${P(cy-0.8*b)} Z" fill="${finFill}"/>`;
+  } else if(s.dorsal==="spiny"){
+    for(let i=0;i<6;i++){const x=cx+(0.35-i*0.13)*a;dorsal+=`<path d="M ${P(x)} ${P(cy-0.82*b)} L ${P(x-0.04*a)} ${P(cy-1.35*b)} L ${P(x-0.10*a)} ${P(cy-0.82*b)} Z" fill="${finFill}"/>`;}
+  } else if(s.dorsal!=="none"){
+    dorsal=`<path d="M ${P(cx+0.28*a)} ${P(cy-0.85*b)} Q ${P(cx-0.05*a)} ${P(cy-1.5*b)}, ${P(cx-0.4*a)} ${P(cy-0.78*b)} Z" fill="${finFill}"/>`;
+  }
+  let trailD="",trailA="";
+  if(s.longFins){
+    trailD=`<path d="M ${P(cx+0.2*a)} ${P(cy-0.8*b)} Q ${P(cx-0.5*a)} ${P(cy-2.0*b)}, ${P(pedX)} ${P(cy-pedH)} Q ${P(cx-0.3*a)} ${P(cy-0.9*b)}, ${P(cx+0.2*a)} ${P(cy-0.8*b)} Z" fill="${finFill}" opacity=".95"/>`;
+    trailA=`<path d="M ${P(cx+0.15*a)} ${P(cy+0.85*b)} Q ${P(cx-0.5*a)} ${P(cy+2.1*b)}, ${P(pedX)} ${P(cy+pedH)} Q ${P(cx-0.3*a)} ${P(cy+0.95*b)}, ${P(cx+0.15*a)} ${P(cy+0.85*b)} Z" fill="${finFill}" opacity=".95"/>`;
+  }
+  const anal=`M ${P(cx-0.05*a)} ${P(cy+0.82*b)} Q ${P(cx-0.3*a)} ${P(cy+(s.longFins?1.7:1.25)*b)}, ${P(cx-0.5*a)} ${P(cy+0.6*b)} Z`;
+  const pect=`M ${P(cx+0.3*a)} ${P(cy+0.2*b)} Q ${P(cx)} ${P(cy+0.9*b)}, ${P(cx-0.2*a)} ${P(cy+0.4*b)} Z`;
+  const adipose=s.adipose?`<circle cx="${P(cx-0.5*a)}" cy="${P(cy-0.72*b)}" r="${P(0.06*a)}" fill="${finFill}"/>`:"";
+  let spikes="";
+  if(s.spikes){for(let i=0;i<20;i++){const ang=(i/20)*Math.PI*2,rx=a*0.94,ry=b*0.98;
+    const x1=cx+Math.cos(ang)*rx,y1=cy+Math.sin(ang)*ry,x2=cx+Math.cos(ang)*rx*1.2,y2=cy+Math.sin(ang)*ry*1.2,ox=-Math.sin(ang)*5,oy=Math.cos(ang)*5;
+    spikes+=`<path d="M ${P(x1+ox)} ${P(y1+oy)} L ${P(x2)} ${P(y2)} L ${P(x1-ox)} ${P(y1-oy)} Z" fill="${s.spikeColor||s.bodyBot}"/>`;}}
+  let pat="";const PA=s.patternColor||"#fff",PA2=s.patternColor2||PA;
+  if(s.pattern==="bands"){for(const bx of[0.5,0.08,-0.4]){const x=cx+bx*a;
+    pat+=`<path d="M ${P(x-0.08*a)} ${P(cy-b)} Q ${P(x)} ${P(cy)} ${P(x-0.08*a)} ${P(cy+b)} L ${P(x+0.1*a)} ${P(cy+b)} Q ${P(x+0.02*a)} ${P(cy)} ${P(x+0.1*a)} ${P(cy-b)} Z" fill="${PA}" opacity=".92"/>`;}}
+  else if(s.pattern==="stripe"){pat+=`<path d="M ${P(pedX)} ${P(cy-0.05*b)} Q ${P(cx)} ${P(cy-0.2*b)} ${P(noseX-8)} ${P(cy)} L ${P(noseX-8)} ${P(cy+0.22*b)} Q ${P(cx)} ${P(cy+0.05*b)} ${P(pedX)} ${P(cy+0.2*b)} Z" fill="${PA}" opacity=".9"/>`;}
+  else if(s.pattern==="hstripes"){for(const sy of[-0.55,-0.18,0.18,0.55])pat+=`<rect x="${P(cx-0.9*a)}" y="${P(cy+sy*b-0.05*b)}" width="${P(1.8*a)}" height="${P(0.1*b)}" fill="${PA}" opacity=".85"/>`;}
+  else if(s.pattern==="spots"){const sp=[[0.35,-0.3],[0.05,0.15],[-0.3,-0.15],[0.2,0.45],[-0.15,0.4],[0.5,0.1],[-0.45,0.1],[0.25,-0.5],[-0.05,-0.4]];for(const[dx,dy]of sp)pat+=`<circle cx="${P(cx+dx*a)}" cy="${P(cy+dy*b)}" r="${P(0.05*a)}" fill="${PA}" opacity=".8"/>`;}
+  else if(s.pattern==="patches"){pat+=`<path d="M ${P(cx+0.25*a)} ${P(cy-0.7*b)} q ${P(0.3*a)} ${P(0.2*b)} ${P(0.1*a)} ${P(0.7*b)} q ${P(-0.35*a)} ${P(0.1*b)} ${P(-0.3*a)} ${P(-0.4*b)} z" fill="${PA}" opacity=".9"/><path d="M ${P(cx-0.45*a)} ${P(cy+0.05*b)} q ${P(0.3*a)} ${P(-0.3*b)} ${P(0.35*a)} ${P(0.3*b)} q ${P(-0.2*a)} ${P(0.35*b)} ${P(-0.45*a)} ${P(0.1*b)} z" fill="${PA2}" opacity=".9"/>`;}
+  const eyeX=cx+a*0.66+bill*0.9, eyeY=cy-b*0.12+headDrop*0.4, eyeR=Math.max(4.5,b*0.15);
+  return `<svg class="fish" viewBox="0 0 220 155" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${s.aria||'fish'}">
+    <defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.bodyTop}"/><stop offset="1" stop-color="${s.bodyBot}"/></linearGradient>
+    <clipPath id="${id}c"><path d="${body}"/></clipPath></defs>
+    ${spikes}<path d="${tail}" fill="${finFill}"/>${trailD}${trailA}${dorsal}<path d="${anal}" fill="${finFill}"/>${adipose}
+    <path d="${body}" fill="url(#${id}g)"/>
+    <g clip-path="url(#${id}c)">${pat}</g>
+    <path d="${pect}" fill="${finFill}" opacity=".85"/>
+    ${bill?`<path d="M ${P(cx+a)} ${P(cy+headDrop-3)} L ${P(noseX+2)} ${P(cy+headDrop-1)} L ${P(cx+a)} ${P(cy+headDrop+3)} Z" fill="${s.bodyTop}"/>`:""}
+    <circle cx="${P(eyeX)}" cy="${P(eyeY)}" r="${P(eyeR)}" fill="#fff"/><circle cx="${P(eyeX+eyeR*0.15)}" cy="${P(eyeY)}" r="${P(eyeR*0.55)}" fill="#0a1a1e"/></svg>`;
+}
+
+/* ---------- species (with field marks for learning) ---------- */
+const FISH = [
+  {name:"Clownfish",sci:"Amphiprion ocellaris",
+   marks:["Bright orange body","Three white bars edged in black","Rounded, paddle-shaped tail"],
+   fact:"Immune to anemone stings, it shelters among tentacles that would harm most other fish.",
+   spec:{a:74,b:48,head:"round",tail:"round",dorsal:"low",bodyTop:"#ff9a3c",bodyBot:"#f4701a",finColor:"#e85d0b",pattern:"bands",patternColor:"#fff",aria:"orange clownfish with white bands"}},
+  {name:"Yellow Tang",sci:"Zebrasoma flavescens",
+   marks:["Disc-shaped, all-yellow body","Sharp pointed snout","White scalpel-like spine at the tail base"],
+   fact:"Brilliant yellow by day, it fades to a duller grey with a pale side stripe at night.",
+   spec:{a:66,b:58,profile:"tall",head:"point",tail:"forked",tailLen:0.8,dorsal:"none",bodyTop:"#ffe14d",bodyBot:"#f4bf1a",finColor:"#f2c21e",aria:"disc-shaped yellow tang"}},
+  {name:"Blue Tang",sci:"Paracanthurus hepatus",
+   marks:["Royal-blue body with a black 'palette' marking","Bright yellow tail","Oval, laterally flattened body"],
+   fact:"When threatened it plays dead, lying still on its side until the danger passes.",
+   spec:{a:80,b:50,head:"point",tail:"crescent",dorsal:"low",bodyTop:"#2f8bff",bodyBot:"#1657c8",finColor:"#ffd23c",pattern:"patches",patternColor:"#0a1f4d",patternColor2:"#0a1f4d",aria:"royal blue tang"}},
+  {name:"Koi",sci:"Cyprinus rubrofuscus",
+   marks:["Stocky torpedo body","Two barbels at the corners of the mouth","Bold orange, white and black patches"],
+   fact:"Kept in ponds for centuries, a well-tended koi can outlive the people who raise it.",
+   spec:{a:92,b:42,head:"round",tail:"fan",dorsal:"low",bodyTop:"#ffffff",bodyBot:"#efefef",finColor:"#ffd9c0",pattern:"patches",patternColor:"#ff6a2b",patternColor2:"#e23b12",aria:"white koi with orange patches"}},
+  {name:"Rainbow Trout",sci:"Oncorhynchus mykiss",
+   marks:["Pink-red band along the side","Small fleshy adipose fin before the tail","Dark spots scattered over body and tail"],
+   fact:"That pink band is brightest on stream-run fish at spawning time.",
+   spec:{a:96,b:38,head:"round",tail:"forked",tailLen:0.8,dorsal:"low",adipose:true,bodyTop:"#7fae7a",bodyBot:"#cfd8d0",finColor:"#9fb6a2",pattern:"stripe",patternColor:"#ff7fa3",aria:"trout with a pink stripe"}},
+  {name:"Largemouth Bass",sci:"Micropterus salmoides",
+   marks:["Upper jaw extends past the eye","Dark blotches forming a broken side stripe","Deep notch between spiny and soft dorsal"],
+   fact:"The jaw hinge past the eye is the tell that separates it from a smallmouth.",
+   spec:{a:92,b:42,head:"round",tail:"forked",tailLen:0.75,dorsal:"spiny",bodyTop:"#4f7a3e",bodyBot:"#d7dcae",finColor:"#5c7a44",pattern:"patches",patternColor:"#2f4a24",patternColor2:"#2f4a24",aria:"green bass with dark blotches"}},
+  {name:"Betta",sci:"Betta splendens",
+   marks:["Long, flowing dorsal, anal and tail fins","Vivid, solid coloration","Small upturned mouth"],
+   fact:"Males flare those fins in display and can't stand the sight of a rival, or a mirror.",
+   spec:{a:60,b:44,head:"round",tail:"fan",tailLen:1.5,dorsal:"none",longFins:true,bodyTop:"#ff4d6d",bodyBot:"#c81e5b",finColor:"#7a1e9c",aria:"red betta with flowing fins"}},
+  {name:"Mahi-Mahi",sci:"Coryphaena hippurus",
+   marks:["Blunt, steep forehead (males)","One long dorsal fin running the whole back","Green-gold body with blue spots"],
+   fact:"One of the fastest-growing fish in the sea — it can reach full length within a year.",
+   spec:{a:96,b:46,head:"steep",tail:"crescent",dorsal:"long",bodyTop:"#2ec4b6",bodyBot:"#ffe14d",finColor:"#1f9e93",pattern:"spots",patternColor:"#0e6fb8",aria:"green-gold mahi-mahi"}},
+  {name:"Angelfish",sci:"Pterophyllum scalare",
+   marks:["Tall, disc-like body","Long trailing dorsal and anal fins","Dark vertical bars"],
+   fact:"That tall, flat body lets it slip between reeds where rounder fish can't follow.",
+   spec:{a:52,b:64,profile:"tall",head:"point",tail:"forked",tailLen:0.7,dorsal:"none",longFins:true,bodyTop:"#f2f4f5",bodyBot:"#c9d2d6",finColor:"#dfe6e8",pattern:"hstripes",patternColor:"#2a2f33",aria:"tall silver angelfish"}},
+  {name:"Red Snapper",sci:"Lutjanus campechanus",
+   marks:["Rosy-red body fading to a pale belly","Sloped forehead and pointed snout","Distinct red eye"],
+   fact:"Prized on the reef and the plate, older adults can pass fifty years of age.",
+   spec:{a:90,b:46,head:"steep",tail:"forked",tailLen:0.85,dorsal:"spiny",bodyTop:"#ff5d5d",bodyBot:"#ffb0a3",finColor:"#e63b3b",aria:"rosy-red snapper"}},
+  {name:"Pufferfish",sci:"Tetraodon",
+   marks:["Rounds into a spiny ball when alarmed","Beak-like fused front teeth","Small fins, no pelvic fins"],
+   fact:"It inflates by gulping water — a bluff most predators decide not to call.",
+   spec:{a:64,b:56,head:"round",tail:"round",dorsal:"none",spikes:true,spikeColor:"#8a7233",bodyTop:"#cbb46b",bodyBot:"#b89a4e",finColor:"#a98f45",pattern:"spots",patternColor:"#5a4a22",aria:"round spiky pufferfish"}},
+  {name:"Swordfish",sci:"Xiphias gladius",
+   marks:["Long, flat sword-like bill","Tall crescent first dorsal fin","Stiff, sickle-shaped tail"],
+   fact:"The bill isn't for spearing — it slashes sideways through schools, then circles back to feed.",
+   spec:{a:104,b:30,bill:44,head:"round",tail:"crescent",dorsal:"tall",bodyTop:"#33506e",bodyBot:"#9fb4c4",finColor:"#2b4258",aria:"swordfish with a long bill"}},
+];
+
+/* difficulty: fish grid width grows with level (22..30) */
+function levelWidth(i){ return 22 + Math.round(i * 8 / (FISH.length-1)); }
+function maxLen(i){ return 6; }
+
+/* ---------- rasterize a fish into a grid of colored cells ---------- */
+const rasterCache = {};
+function rasterizeFish(idx, cols){
+  const key = idx+"@"+cols;
+  if(rasterCache[key]) return Promise.resolve(rasterCache[key]);
+  return new Promise((resolve)=>{
+    const vbW=220, vbH=155, rows=Math.max(6, Math.round(cols*vbH/vbW)), S=8;
+    const svg = fishSVG(FISH[idx].spec).replace("<svg ", `<svg width="${cols*S}" height="${rows*S}" `);
+    const url = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+    const img = new Image();
+    const done = (res)=>{ rasterCache[key]=res; resolve(res); };
+    img.onload = ()=>{
+      try{
+        const cv=document.createElement("canvas"); cv.width=cols*S; cv.height=rows*S;
+        const ctx=cv.getContext("2d"); ctx.drawImage(img,0,0,cols*S,rows*S);
+        const data=ctx.getImageData(0,0,cv.width,cv.height).data;
+        const cells=new Map();
+        for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+          let ar=0,ag=0,ab=0,aa=0;
+          for(let yy=0;yy<S;yy++)for(let xx=0;xx<S;xx++){
+            const px=((r*S+yy)*cv.width+(c*S+xx))*4, al=data[px+3];
+            if(al>20){ ar+=data[px]*al; ag+=data[px+1]*al; ab+=data[px+2]*al; aa+=al; }
+          }
+          if(aa/(S*S*255) > 0.33) cells.set(r+","+c, `rgb(${Math.round(ar/aa)},${Math.round(ag/aa)},${Math.round(ab/aa)})`);
+        }
+        if(cells.size < 8) return done(fallbackFish(rows,cols));
+        done({rows,cols,cells});
+      }catch(e){ done(fallbackFish(rows,cols)); }
+    };
+    img.onerror = ()=>done(fallbackFish(rows,cols));
+    img.src=url;
+  });
+}
+function fallbackFish(rows,cols){
+  const cells=new Map(), cx=cols*0.58, cy=rows/2, a=cols*0.42, b=rows*0.42;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const nx=(c-cx)/a, ny=(r-cy)/b;
+    if(nx*nx+ny*ny<=1) cells.set(r+","+c,"#43c9bd");
+    else if(c<cols*0.2 && Math.abs(ny) < (0.2 + (cols*0.2-c)/(cols*0.2))*0.5) cells.set(r+","+c,"#2f9c95");
+  }
+  return {rows,cols,cells};
+}
+
+/* ---------- generation: variable-length arrows, longest first ---------- */
+const DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+const DK=Object.keys(DIRS);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function rayClear(occ,rows,cols,r,c,d){
+  const [dr,dc]=DIRS[d]; let rr=r+dr,cc=c+dc;
+  while(rr>=0&&rr<rows&&cc>=0&&cc<cols){ if(occ.has(rr+","+cc)) return false; rr+=dr; cc+=dc; }
+  return true;
+}
+function generatePieces(cells,rows,cols,mlen){
+  let best=null;
+  for(let attempt=0; attempt<6; attempt++){
+    const occ=new Map(); const pieces=[];
+    while(true){
+      let bestLen=0, bestOpt=null;
+      const empt=shuffle([...cells.keys()].filter(k=>!occ.has(k)));
+      for(const k of empt){
+        const [r,c]=k.split(",").map(Number);
+        for(const d of DK){
+          if(!rayClear(occ,rows,cols,r,c,d)) continue;
+          const [dr,dc]=DIRS[d]; const body=[];
+          for(let t=0;t<mlen;t++){ const cell=(r-dr*t)+","+(c-dc*t); if(!cells.has(cell)||occ.has(cell)) break; body.push(cell); }
+          if(body.length>bestLen){ bestLen=body.length; bestOpt={r,c,d,body}; if(bestLen===mlen) break; }
+        }
+        if(bestLen===mlen) break;
+      }
+      if(!bestOpt) break;
+      const id=pieces.length;
+      for(const cell of bestOpt.body) occ.set(cell,id);
+      pieces.push({id, dir:bestOpt.d, head:[bestOpt.r,bestOpt.c], cells:bestOpt.body.map(s=>s.split(",").map(Number))});
+    }
+    if(!best || occ.size>best.cover) best={cover:occ.size, pieces};
+  }
+  return best.pieces;
+}
+
+/* ---------- arrow capsule svg ---------- */
+function capsuleSVG(N, dir){
+  const HW=0.46, HL=0.72, pad=0.16, tip=0.06;
+  let vb, shaft, head, gloss;
+  if(dir==="right"){ vb=`0 0 ${N} 1`; shaft=`M ${pad} .5 L ${N-HL+0.05} .5`; gloss=`M ${pad} .34 L ${N-HL} .34`; head=`M ${N-HL} ${0.5-HW} L ${N-tip} .5 L ${N-HL} ${0.5+HW} Z`; }
+  else if(dir==="left"){ vb=`0 0 ${N} 1`; shaft=`M ${N-pad} .5 L ${HL-0.05} .5`; gloss=`M ${N-pad} .34 L ${HL} .34`; head=`M ${HL} ${0.5-HW} L ${tip} .5 L ${HL} ${0.5+HW} Z`; }
+  else if(dir==="down"){ vb=`0 0 1 ${N}`; shaft=`M .5 ${pad} L .5 ${N-HL+0.05}`; gloss=`M .34 ${pad} L .34 ${N-HL}`; head=`M ${0.5-HW} ${N-HL} L .5 ${N-tip} L ${0.5+HW} ${N-HL} Z`; }
+  else { vb=`0 0 1 ${N}`; shaft=`M .5 ${N-pad} L .5 ${HL-0.05}`; gloss=`M .34 ${N-pad} L .34 ${HL}`; head=`M ${0.5-HW} ${HL} L .5 ${tip} L ${0.5+HW} ${HL} Z`; }
+  return `<svg viewBox="${vb}" preserveAspectRatio="none"><path class="stroke" d="${shaft}"/><path class="gloss" d="${gloss}"/><path class="head" d="${head}"/></svg>`;
+}
+
+/* ---------- state ---------- */
+const el=(id)=>document.getElementById(id);
+const board=el("board");
+let S=null;
+const cellDiv=new Map();
+
+function starSVG(){ return `<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18.9 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>`; }
+function renderHeaderStars(best){
+  const wrap=el("stars"); wrap.innerHTML="";
+  for(let i=0;i<3;i++){ const s=document.createElement("span"); s.innerHTML=starSVG();
+    const svg=s.firstChild; svg.classList.add("s"); if(i<best) svg.classList.add("on"); wrap.appendChild(svg); }
+}
+
+async function startLevel(i){
+  el("level").textContent="Level "+String(i+1).padStart(2,"0");
+  renderHeaderStars(Number(store.get("aa_stars_"+i)||0));
+  el("hintbar").textContent="Surfacing the next puzzle…";
+  el("bar").style.width="0%";
+  hideReveal();
+  const cols=levelWidth(i);
+  const raster=await rasterizeFish(i,cols);
+  const pieces=generatePieces(raster.cells,raster.rows,raster.cols,maxLen(i));
+  const occ=new Map(); const covered=new Set();
+  for(const pc of pieces){ pc.alive=true; for(const [r,c] of pc.cells){ occ.set(r+","+c,pc.id); covered.add(r+","+c); } }
+  S={level:i, rows:raster.rows, cols:raster.cols, cells:raster.cells,
+     pieces, occ, covered, total:pieces.length, remaining:pieces.length,
+     moves:0, undos:0, blocked:0, history:[], won:false, busy:false};
+  el("hintbar").textContent = i===0
+    ? "Tap an arrow to send it swimming off — it slides away only if nothing blocks its path."
+    : "Clear every arrow to surface the species.";
+  renderBoard(true);
+  updateProgress(); updateButtons();
+  S.busy=false;
+}
+
+function pieceBounds(pc){
+  let minR=1e9,maxR=-1e9,minC=1e9,maxC=-1e9;
+  for(const [r,c] of pc.cells){ if(r<minR)minR=r; if(r>maxR)maxR=r; if(c<minC)minC=c; if(c>maxC)maxC=c; }
+  return {minR,maxR,minC,maxC};
+}
+
+function renderBoard(animateIn){
+  board.style.gridTemplateColumns=`repeat(${S.cols},1fr)`;
+  board.style.gridTemplateRows=`repeat(${S.rows},1fr)`;
+  board.style.aspectRatio=`${S.cols} / ${S.rows}`;
+  board.innerHTML=""; cellDiv.clear();
+  for(const [key,color] of S.cells){
+    const [r,c]=key.split(",").map(Number);
+    const d=document.createElement("div");
+    d.className="cell"; d.style.gridColumn=(c+1); d.style.gridRow=(r+1);
+    d.style.background=color;
+    if(!S.covered.has(key) || !S.occ.has(key)) d.classList.add("lit");
+    board.appendChild(d); cellDiv.set(key,d);
+  }
+  let order=0;
+  for(const pc of S.pieces){
+    if(!pc.alive) continue;
+    const bb=pieceBounds(pc);
+    const a=document.createElement("div");
+    a.className="arrow"; a.dataset.id=pc.id;
+    a.style.gridColumn=`${bb.minC+1} / ${bb.maxC+2}`;
+    a.style.gridRow=`${bb.minR+1} / ${bb.maxR+2}`;
+    a.innerHTML=capsuleSVG(pc.cells.length, pc.dir);
+    a.setAttribute("role","button");
+    a.setAttribute("aria-label",`Arrow pointing ${pc.dir}, length ${pc.cells.length}`);
+    a.addEventListener("click",()=>onTap(pc,a));
+    board.appendChild(a);
+    if(animateIn){ setTimeout(()=>a.classList.add("in"), Math.min(order*10,520)); order++; }
+    else a.classList.add("in");
+  }
+}
+
+function headRayClear(pc){
+  const [r,c]=pc.head, [dr,dc]=DIRS[pc.dir]; let rr=r+dr,cc=c+dc;
+  while(rr>=0&&rr<S.rows&&cc>=0&&cc<S.cols){
+    const id=S.occ.get(rr+","+cc);
+    if(id!==undefined && id!==pc.id) return false;
+    rr+=dr; cc+=dc;
+  }
+  return true;
+}
+
+function onTap(pc,a){
+  if(S.won||S.busy||!pc.alive) return;
+  clearHints();
+  if(!headRayClear(pc)){
+    a.classList.remove("shake"); void a.offsetWidth; a.classList.add("shake");
+    S.blocked++;
+    if(navigator.vibrate) navigator.vibrate(16);
+    el("hintbar").textContent="Blocked — another arrow is in its way. Clear that path first.";
+    return;
+  }
+  pc.alive=false;
+  for(const [r,c] of pc.cells) S.occ.delete(r+","+c);
+  S.history.push(pc.id); S.remaining--; S.moves++;
+  flyOff(pc,a);
+  for(const [r,c] of pc.cells){
+    const dv=cellDiv.get(r+","+c);
+    if(dv){ dv.classList.add("lit","pop"); setTimeout(()=>dv.classList.remove("pop"),440); }
+  }
+  if(navigator.vibrate) navigator.vibrate(8);
+  updateProgress(); updateButtons();
+  el("hintbar").textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
+  if(S.remaining===0){ S.won=true; setTimeout(win,520); }
+}
+
+function flyOff(pc,a){
+  const [dr,dc]=DIRS[pc.dir];
+  a.classList.add("flying");
+  a.style.transition="transform .5s cubic-bezier(.45,0,.75,.3), opacity .16s ease .34s";
+  requestAnimationFrame(()=>{ a.style.transform=`translate(${dc*130}vw, ${dr*130}vh)`; a.style.opacity="0"; });
+  setTimeout(()=>a.remove(),520);
+}
+
+function updateProgress(){ el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
+function updateButtons(){ el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
+
+function undo(){
+  if(!S.history.length||S.won||S.busy) return;
+  const id=S.history.pop(); const pc=S.pieces[id];
+  pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id);
+  S.remaining++; S.moves++; S.undos++;
+  renderBoard(false); updateProgress(); updateButtons();
+  el("hintbar").textContent="Move undone.";
+}
+function reset(){
+  if(S.busy||S.won) return;
+  if(!S.history.length){ el("hintbar").textContent="Already at the start."; return; }
+  for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
+  S.remaining=S.total; S.history=[]; S.blocked=0;
+  renderBoard(false); updateProgress(); updateButtons();
+  el("hintbar").textContent="Puzzle reset.";
+}
+function hint(){
+  if(S.won||S.busy) return; clearHints();
+  const firable=S.pieces.filter(pc=>pc.alive && headRayClear(pc));
+  if(!firable.length) return;
+  const pc=firable[(Math.random()*firable.length)|0];
+  const a=board.querySelector(`.arrow[data-id="${pc.id}"]`);
+  if(a){
+    a.classList.remove("shake"); void a.offsetWidth; a.classList.add("shake");
+    a.querySelectorAll(".stroke,.head").forEach(n=>{ n.style.stroke="var(--aqua-lo)"; n.style.fill=n.classList.contains("head")?"var(--aqua-lo)":""; });
+    setTimeout(()=>clearHints(),1300);
+    el("hintbar").textContent = firable.length>1
+      ? `${firable.length} arrows can move right now — try this one.`
+      : "This one has a clear path out.";
+  }
+}
+function clearHints(){ board.querySelectorAll(".arrow").forEach(a=>a.querySelectorAll(".stroke,.head").forEach(n=>{n.style.stroke="";n.style.fill="";})); }
+
+function starsFor(){ return Math.max(1, 3 - (S.undos + Math.floor(S.blocked/3))); }
+function marksHTML(fish){ return `<div class="marks"><h3>How to know it</h3><ul>${fish.marks.map(m=>`<li>${m}</li>`).join("")}</ul></div>`; }
+
+function win(){
+  const fish=FISH[S.level], earned=starsFor();
+  store.set("aa_progress", String(Math.max(Number(store.get("aa_progress")||0), S.level+1)));
+  store.set("aa_stars_"+S.level, String(Math.max(Number(store.get("aa_stars_"+S.level)||0), earned)));
+  renderHeaderStars(Math.max(Number(store.get("aa_stars_"+S.level)||0), earned));
+  for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv && !dv.classList.contains("lit")) dv.classList.add("lit"); }
+  const last=S.level>=FISH.length-1, card=el("revealCard");
+  let stars=""; for(let i=0;i<3;i++) stars+=`<svg class="${i<earned?'on':''}" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18.9 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>`;
+  card.innerHTML=`${fishSVG(fish.spec)}
+    <div class="earned">${stars}</div>
+    <div class="caught">Species identified</div>
+    <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
+    ${marksHTML(fish)}
+    <p class="fact">${fish.fact}</p>
+    ${last?`<p class="tiny">You've landed all ${FISH.length} species. Revisit any of them in the Field Guide.</p>`:`<p class="tiny">Take a moment to study its features, then move on when you're ready.</p>`}
+    <div class="cta">${last?`<button class="btn primary" id="againBtn">Dive again</button>`
+      :`<button class="btn" id="replayBtn">Replay</button><button class="btn primary" id="nextBtn">Next fish</button>`}</div>`;
+  el("reveal").classList.add("show");
+  if(navigator.vibrate) navigator.vibrate([12,40,18]);
+  if(last) el("againBtn").onclick=()=>startLevel(0);
+  else{ el("nextBtn").onclick=()=>startLevel(S.level+1); el("replayBtn").onclick=()=>startLevel(S.level); }
+}
+function hideReveal(){ el("reveal").classList.remove("show"); }
+
+/* ---------- field guide ---------- */
+function openGuide(){
+  const caught=Number(store.get("aa_progress")||0);
+  const scroll=el("guideScroll"); scroll.innerHTML="";
+  FISH.forEach((fish,i)=>{
+    const got = i<caught;
+    const c=document.createElement("div");
+    c.className="gcard"+(got?"":" locked");
+    if(got){
+      c.innerHTML=`<div class="thumb">${fishSVG(fish.spec)}</div>
+        <div class="info"><h3>${fish.name}</h3><div class="gsci">${fish.sci}</div>
+        <div class="gmark">${fish.marks[0]} · ${fish.marks[1]}</div></div>`;
+    } else {
+      c.innerHTML=`<div class="thumb">?</div><div class="info"><h3>Not yet caught</h3>
+        <p>Clear level ${String(i+1).padStart(2,"0")} to add this species to your guide.</p></div>`;
+    }
+    scroll.appendChild(c);
+  });
+  el("guide").classList.add("show");
+}
+function closeGuide(){ el("guide").classList.remove("show"); }
+
+el("undoBtn").onclick=undo; el("resetBtn").onclick=reset; el("hintBtn").onclick=hint;
+el("guideBtn").onclick=openGuide; el("guideClose").onclick=closeGuide;
+el("playBtn").onclick=()=>el("splash").classList.add("hide");
+
+/* bubbles */
+(function(){const box=el("bubbles");for(let i=0;i<12;i++){const b=document.createElement("div");b.className="bubble";
+  const s=4+Math.random()*13;b.style.width=s+"px";b.style.height=s+"px";b.style.left=(Math.random()*100)+"%";
+  b.style.setProperty("--drift",(Math.random()*40-20)+"px");b.style.animationDuration=(10+Math.random()*12)+"s";
+  b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
+
+/* start */
+startLevel(Math.min(Number(store.get("aa_progress")||0), FISH.length-1));
+
+/* service worker */
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }
+</script>
+</body>
+</html>
