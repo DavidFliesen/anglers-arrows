@@ -80,6 +80,7 @@
   .progress{height:7px;border-radius:999px;background:rgba(5,22,29,.4);border:1px solid rgba(169,192,224,.18);overflow:hidden;margin:16px 2px 0}
   .progress .bar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--aqua-hi),var(--aqua) 60%,var(--aqua-lo));transition:width .4s cubic-bezier(.2,.7,.2,1)}
   .hintbar{margin-top:11px;text-align:center;font-size:13px;color:var(--mist);min-height:17px;padding:0 6px}
+  .ver{text-align:center;font-size:10px;color:rgba(169,192,224,.5);margin-top:12px;font-family:var(--mono);letter-spacing:.12em}
 
   .controls{display:flex;gap:12px;margin-top:12px}
   .tool{flex:1;border:0;cursor:pointer;font-family:var(--font);font-weight:800;font-size:13px;color:var(--foam);
@@ -206,6 +207,7 @@
     <button class="tool reset" id="resetBtn" type="button" aria-label="Reset"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></span>Reset</button>
     <button class="tool catch" id="catchBtn" type="button" aria-label="Your Catch field guide"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M9 3v14"/></svg></span>Your Catch</button>
   </div>
+  <div class="ver" id="ver"></div>
 </div>
 
 <div class="overlay" id="reveal" role="dialog" aria-modal="true" aria-label="Species revealed"><div class="card" id="revealCard"></div></div>
@@ -235,6 +237,7 @@
 
 <script>
 "use strict";
+const APP_VERSION="v10";
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -568,10 +571,10 @@ function makeArrowEl(pc,NS){
   const dd="M "+pts.join(" L ");
   const hit=document.createElementNS(NS,"path"); hit.setAttribute("class","hit"); hit.setAttribute("d",dd); g.appendChild(hit);
   const shaft=document.createElementNS(NS,"path"); shaft.setAttribute("class","shaft"); shaft.setAttribute("d",dd); g.appendChild(shaft);
-  const [hr,hc]=pc.head, [dr,dc]=DIRS[pc.dir]; const hx=hc+0.5, hy=hr+0.5, px=-dc, py=dr;
-  const tip=`${(hx+dc*0.66).toFixed(3)} ${(hy+dr*0.66).toFixed(3)}`;
-  const b1=`${(hx+px*0.52-dc*0.12).toFixed(3)} ${(hy+py*0.52-dr*0.12).toFixed(3)}`;
-  const b2=`${(hx-px*0.52-dc*0.12).toFixed(3)} ${(hy-py*0.52-dr*0.12).toFixed(3)}`;
+  const [hr,hc]=pc.head, [dr,dc]=DIRS[pc.dir]; const hx=hc+0.5, hy=hr+0.5, px=-dr, py=dc;
+  const tip=`${(hx+dc*0.85).toFixed(3)} ${(hy+dr*0.85).toFixed(3)}`;
+  const b1=`${(hx+px*0.62-dc*0.15).toFixed(3)} ${(hy+py*0.62-dr*0.15).toFixed(3)}`;
+  const b2=`${(hx-px*0.62-dc*0.15).toFixed(3)} ${(hy-py*0.62-dr*0.15).toFixed(3)}`;
   const head=document.createElementNS(NS,"path"); head.setAttribute("class","head"); head.setAttribute("d",`M ${tip} L ${b1} L ${b2} Z`); g.appendChild(head);
   g.addEventListener("click",()=>onTap(pc,g));
   return g;
@@ -706,6 +709,7 @@ el("playBtn").onclick=()=>{ el("splash").classList.add("hide"); if(fsSupported()
   b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
 
 startLevel(Math.min(Number(store.get("aa_progress")||0), FISH.length-1));
+try{ document.getElementById("ver").textContent="Angler\u2019s Arrows \u00b7 "+APP_VERSION; }catch(e){}
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }
 </script>
 </body>
