@@ -59,7 +59,7 @@
   .board-card::before{content:"";position:absolute;inset:16px;border-radius:12px;pointer-events:none;
     background-image:radial-gradient(rgba(18,41,74,.08) 1.3px, transparent 1.5px);background-size:5% 5%;background-position:center}
   .board{position:relative;width:100%;display:grid;gap:0}
-  .ghost{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;opacity:.14;z-index:0;pointer-events:none;transition:opacity .9s ease}
+  .ghost{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;opacity:.14;z-index:0;pointer-events:none;transition:opacity .5s ease}
   .ghost.materialize{opacity:1}
   .cell{position:relative;border-radius:24%;background:transparent;opacity:0;transform:scale(.5);margin:10%;
     transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s, background .35s ease, filter .35s ease}
@@ -71,7 +71,7 @@
   .arrows{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:3;transition:opacity .4s ease}
   .arrow{pointer-events:none}
   .arrow .hit{fill:none;stroke:transparent;stroke-width:.92;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:pointer}
-  .arrow .shaft{fill:none;stroke:var(--ink);stroke-width:.58;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+  .arrow .shaft{fill:none;stroke:var(--ink);stroke-width:.46;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
   .arrow .head{fill:var(--ink);pointer-events:auto;cursor:pointer}
   .arrow.hint .shaft{stroke:var(--aqua-lo)} .arrow.hint .head{fill:var(--aqua-lo)}
   .arrow.shake{animation:shakeA .4s ease}
@@ -160,6 +160,11 @@
   .gcard .info .gsci{font-style:italic;color:#5a739e;font-size:12.5px;margin:2px 0 6px}
   .gcard .info .gmark{font-size:12.5px;color:#2a4470;line-height:1.35}
   .gcard .info .tap{font-size:11px;color:var(--aqua-lo);font-weight:800;margin-top:6px;letter-spacing:.04em}
+  .gback{display:inline-flex;align-items:center;background:rgba(5,22,29,.4);border:1px solid rgba(169,192,224,.24);color:var(--foam);font-family:var(--font);font-weight:800;font-size:14px;padding:11px 16px;border-radius:12px;cursor:pointer;margin:2px 0 16px}
+  .gback:active{transform:translateY(1px)}
+  .gdetail{display:flex;flex-direction:column;align-items:center;max-width:430px;margin:0 auto}
+  .gdetail .fishwrap{width:min(72vw,300px);margin-bottom:-4px;z-index:2}
+  .gdetail .panel{width:100%}
   .gcard.locked .info p{color:var(--mist);font-size:13px;margin:4px 0 0}
 
   .splash{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:28px;background:radial-gradient(90% 70% at 50% 36%, #123a72, #00102e 78%);transition:opacity .55s ease, visibility .55s}
@@ -238,7 +243,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="v11";
+const APP_VERSION="v13";
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -415,18 +420,34 @@ const MINLEN=3, MAXLEN=7;
 
 /* ---------- rasterize fish into colored cells ---------- */
 const rasterCache={}, imgCache={};
-function loadFishImage(idx){ const f=FISH[idx]; if(!f.img) return Promise.resolve(null);
+function loadFishImage(idx){ const f=FISH[idx]; if(!f.slug) return Promise.resolve(null);
   if(idx in imgCache) return Promise.resolve(imgCache[idx]);
-  return new Promise((res)=>{ const im=new Image();
-    im.onload=()=>{ imgCache[idx]=im; res(im); }; im.onerror=()=>{ imgCache[idx]=null; res(null); }; im.src=f.img; }); }
+  const exts=["png","jpg","jpeg","webp"];
+  return new Promise((res)=>{ let k=0; const go=()=>{ if(k>=exts.length){ imgCache[idx]=null; return res(null); }
+    const im=new Image(); im.onload=()=>{ imgCache[idx]=im; res(im); }; im.onerror=()=>{ k++; go(); };
+    im.src="images/fish/"+f.slug+"."+exts[k]; }; go(); }); }
 
 async function rasterizeFish(idx, cols){
   const key=idx+"@"+cols; if(rasterCache[key]) return rasterCache[key];
-  let res=null;
+  const svgRes=await rasterizeFromSVG(idx,cols);              // clean fish-shaped mask + vector art + silhouette
+  let res=svgRes;
   const img=await loadFishImage(idx);
-  if(img){ try{ res=rasterizeFromImage(img,cols); }catch(e){ res=null; } }   // shape the puzzle from the real artwork
-  if(!res) res=await rasterizeFromSVG(idx,cols);                             // else from the drawn illustration
+  if(img){
+    let imgRes=null; try{ imgRes=rasterizeFromImage(img,cols); }catch(e){}
+    if(imgRes){ res=imgRes; }                                 // transparent cutout or clean plate: fish-shaped from the image itself
+    else { res={rows:svgRes.rows,cols:svgRes.cols,cells:svgRes.cells,art:img.src,fit:"cover"}; }  // full scene: fish-shaped arrows over the whole picture
+  }
+  if(res && res.sil) delete res.sil;
   rasterCache[key]=res; return res;
+}
+function clipPhoto(img, sil){
+  const W=sil.width, H=sil.height;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+  const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+  const sc=Math.max(W/iw,H/ih), dw=iw*sc, dh=ih*sc;
+  ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+  ctx.globalCompositeOperation="destination-in"; ctx.drawImage(sil,0,0,W,H); ctx.globalCompositeOperation="source-over";
+  try{ return cv.toDataURL("image/png"); }catch(e){ return null; }
 }
 function rasterizeFromSVG(idx, cols){
   return new Promise((resolve)=>{
@@ -444,7 +465,7 @@ function rasterizeFromSVG(idx, cols){
           if(aa/(SS*SS*255)>0.32) cells.set(r+","+c,`rgb(${Math.round(ar/aa)},${Math.round(ag/aa)},${Math.round(ab/aa)})`); }
         if(cells.size<10) return resolve(fallbackFish(rows,cols));
         let art=null; try{ art=cv.toDataURL("image/png"); }catch(e){}
-        resolve({rows,cols,cells,art});
+        resolve({rows,cols,cells,art,sil:cv});
       }catch(e){ resolve(fallbackFish(rows,cols)); } };
     img.onerror=()=>resolve(fallbackFish(rows,cols)); img.src=url;
   });
@@ -456,11 +477,19 @@ function rasterizeFromImage(img, cols){
   const ctx=cv.getContext("2d"); ctx.drawImage(img,0,0,W,H);
   let data; try{ data=ctx.getImageData(0,0,W,H); }catch(e){ return null; }   // cross-origin taint -> fall back
   const px=data.data;
-  let br=0,bg=0,bb=0; for(const [x,y] of [[0,0],[W-1,0],[0,H-1],[W-1,H-1]]){ const i=(y*W+x)*4; br+=px[i];bg+=px[i+1];bb+=px[i+2]; } br/=4;bg/=4;bb/=4;
-  const T2=60*60, isBg=(i)=>{ const dr=px[i]-br,dg=px[i+1]-bg,db=px[i+2]-bb; return dr*dr+dg*dg+db*db<T2; };
-  const bgm=new Uint8Array(W*H), st=[]; const push=(p)=>{ if(!bgm[p]&&isBg(p*4)){ bgm[p]=1; st.push(p); } };
-  for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=0;y<H;y++){ push(y*W); push(y*W+W-1); }
-  while(st.length){ const p=st.pop(), x=p%W, y=(p/W)|0; if(x>0)push(p-1); if(x<W-1)push(p+1); if(y>0)push(p-W); if(y<H-1)push(p+W); }
+  const bgm=new Uint8Array(W*H);
+  let transp=0; for(let p=3;p<px.length;p+=4) if(px[p]<40) transp++;
+  if(transp > W*H*0.04){                                    // transparent PNG: alpha is the mask
+    for(let q=0;q<W*H;q++) if(px[q*4+3]<128) bgm[q]=1;
+  } else {                                                  // opaque: flood-fill a uniform background from the borders
+    let br=0,bg=0,bb=0; for(const [x,y] of [[0,0],[W-1,0],[0,H-1],[W-1,H-1]]){ const i=(y*W+x)*4; br+=px[i];bg+=px[i+1];bb+=px[i+2]; } br/=4;bg/=4;bb/=4;
+    const T2=60*60, isBg=(i)=>{ const dr=px[i]-br,dg=px[i+1]-bg,db=px[i+2]-bb; return dr*dr+dg*dg+db*db<T2; };
+    const st=[], push=(p)=>{ if(!bgm[p]&&isBg(p*4)){ bgm[p]=1; st.push(p); } };
+    for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=0;y<H;y++){ push(y*W); push(y*W+W-1); }
+    while(st.length){ const p=st.pop(), x=p%W, y=(p/W)|0; if(x>0)push(p-1); if(x<W-1)push(p+1); if(y>0)push(p-W); if(y<H-1)push(p+W); }
+    let nonBg=0; for(let p=0;p<W*H;p++) if(!bgm[p]) nonBg++;
+    if(nonBg/(W*H) > 0.80) return null;                     // busy scene -> caller shows the full image behind the arrows
+  }
   let minX=W,minY=H,maxX=-1,maxY=-1;
   for(let p=0;p<W*H;p++){ if(!bgm[p]){ const x=p%W,y=(p/W)|0; if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y; } }
   if(maxX<0) return null; const bw=maxX-minX+1, bh=maxY-minY+1;
@@ -551,7 +580,7 @@ async function startLevel(i){
   const pieces=generatePieces(new Set(raster.cells.keys()),raster.rows,raster.cols);
   const occ=new Map(), covered=new Set();
   for(const pc of pieces){ pc.alive=true; for(const [r,c] of pc.cells){ occ.set(r+","+c,pc.id); covered.add(r+","+c); } }
-  S={level:i, rows:raster.rows, cols:raster.cols, cells:raster.cells, art:raster.art||null, ghost:null, pieces, occ, covered,
+  S={level:i, rows:raster.rows, cols:raster.cols, cells:raster.cells, art:raster.art||null, fit:raster.fit||null, ghost:null, pieces, occ, covered,
      total:pieces.length, remaining:pieces.length, moves:0, undos:0, blocked:0, history:[], won:false, busy:false};
   el("hintbar").textContent = i===0
     ? "Tap an arrow to send it swimming off — it slides away only if its path is clear."
@@ -561,7 +590,7 @@ async function startLevel(i){
 function renderBoard(animateIn){
   board.style.gridTemplateColumns=`repeat(${S.cols},1fr)`; board.style.gridTemplateRows=`repeat(${S.rows},1fr)`;
   board.style.aspectRatio=`${S.cols} / ${S.rows}`; board.style.position="relative"; board.innerHTML=""; cellDiv.clear(); S.ghost=null;
-  if(S.art){ const gi=document.createElement("img"); gi.className="ghost"; gi.src=S.art; gi.alt=""; board.appendChild(gi); S.ghost=gi; }
+  if(S.art){ const gi=document.createElement("img"); gi.className="ghost"; gi.src=S.art; gi.alt=""; if(S.fit) gi.style.objectFit=S.fit; board.appendChild(gi); S.ghost=gi; setGhostOpacity(); }
   else { for(const [key,color] of S.cells){ const [r,c]=key.split(",").map(Number);
       const d=document.createElement("div"); d.className="cell"; d.style.gridColumn=(c+1); d.style.gridRow=(r+1); d.style.background=color;
       if(!S.covered.has(key)) d.classList.add("faint"); else if(!S.occ.has(key)) d.classList.add("lit");
@@ -581,9 +610,9 @@ function makeArrowEl(pc,NS){
   const hit=document.createElementNS(NS,"path"); hit.setAttribute("class","hit"); hit.setAttribute("d",dd); g.appendChild(hit);
   const shaft=document.createElementNS(NS,"path"); shaft.setAttribute("class","shaft"); shaft.setAttribute("d",dd); g.appendChild(shaft);
   const [hr,hc]=pc.head, [dr,dc]=DIRS[pc.dir]; const hx=hc+0.5, hy=hr+0.5, px=-dr, py=dc;
-  const tip=`${(hx+dc*0.85).toFixed(3)} ${(hy+dr*0.85).toFixed(3)}`;
-  const b1=`${(hx+px*0.62-dc*0.15).toFixed(3)} ${(hy+py*0.62-dr*0.15).toFixed(3)}`;
-  const b2=`${(hx-px*0.62-dc*0.15).toFixed(3)} ${(hy-py*0.62-dr*0.15).toFixed(3)}`;
+  const tip=`${(hx+dc*0.70).toFixed(3)} ${(hy+dr*0.70).toFixed(3)}`;
+  const b1=`${(hx+px*0.40-dc*0.05).toFixed(3)} ${(hy+py*0.40-dr*0.05).toFixed(3)}`;
+  const b2=`${(hx-px*0.40-dc*0.05).toFixed(3)} ${(hy-py*0.40-dr*0.05).toFixed(3)}`;
   const head=document.createElementNS(NS,"path"); head.setAttribute("class","head"); head.setAttribute("d",`M ${tip} L ${b1} L ${b2} Z`); g.appendChild(head);
   g.addEventListener("click",()=>onTap(pc,g));
   return g;
@@ -606,7 +635,7 @@ function onTap(pc,g){
   for(const [r,c] of pc.cells){ const dv=cellDiv.get(r+","+c);
     if(dv){ dv.classList.remove("faint"); dv.classList.add("lit","pop"); setTimeout(()=>dv.classList.remove("pop"),440); } }
   if(navigator.vibrate) navigator.vibrate(8);
-  updateProgress(); updateButtons();
+  updateProgress(); updateButtons(); setGhostOpacity();
   el("hintbar").textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
   if(S.remaining===0){ S.won=true; setTimeout(win,540); }
 }
@@ -615,21 +644,21 @@ function flyOff(pc,g){
   const shaft=g.querySelector(".shaft"), hit=g.querySelector(".hit"), head=g.querySelector(".head");
   const pts=pc.cells.map(([r,c])=>[c+0.5,r+0.5]);
   let bodyLen=0; for(let i=1;i<pts.length;i++) bodyLen+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
-  const hx=pts[pts.length-1][0], hy=pts[pts.length-1][1], D=Math.max(S.cols,S.rows)*1.7;
+  const hx=pts[pts.length-1][0], hy=pts[pts.length-1][1], D=Math.max(S.cols,S.rows)*1.8;
   const full="M "+pts.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join(" L ")+` L ${(hx+dc*D).toFixed(2)} ${(hy+dr*D).toFixed(2)}`;
-  const total=bodyLen+D, dur=560, dash=`${bodyLen.toFixed(2)} ${(total+2).toFixed(2)}`;
-  if(shaft){ shaft.setAttribute("d",full); shaft.style.strokeDasharray=dash; shaft.style.strokeDashoffset="0"; shaft.getBBox && shaft.getBBox(); shaft.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(.4,0,.7,.22)`; }
-  if(hit){ hit.setAttribute("d",full); hit.style.strokeDasharray=dash; hit.style.strokeDashoffset="0"; }
-  if(head){ head.style.transition=`transform ${dur}ms cubic-bezier(.4,0,.7,.22)`; }
-  g.style.transition=`opacity .2s ease ${dur-180}ms`;
+  const dur=660, ease="cubic-bezier(.42,0,.7,.5)", dash=`${bodyLen.toFixed(2)} ${(bodyLen+D+2).toFixed(2)}`;
+  [shaft,hit].forEach(n=>{ if(!n) return; n.setAttribute("d",full); n.style.strokeDasharray=dash; n.style.strokeDashoffset="0"; });
+  if(shaft && shaft.getBBox) shaft.getBBox();                          // commit start state before transitioning
+  [shaft,hit].forEach(n=>{ if(n) n.style.transition=`stroke-dashoffset ${dur}ms ${ease}`; });
+  if(head) head.style.transition=`transform ${dur}ms ${ease}`;
   requestAnimationFrame(()=>{
     if(shaft) shaft.style.strokeDashoffset=`${(-D).toFixed(2)}`;
-    if(hit) hit.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(.4,0,.7,.22)`, hit.style.strokeDashoffset=`${(-D).toFixed(2)}`;
+    if(hit) hit.style.strokeDashoffset=`${(-D).toFixed(2)}`;
     if(head) head.style.transform=`translate(${(dc*D).toFixed(2)}px, ${(dr*D).toFixed(2)}px)`;
-    g.style.opacity="0";
   });
-  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+40);
+  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+30);
 }
+function setGhostOpacity(){ if(!S||!S.ghost) return; const done=S.total?(S.total-S.remaining)/S.total:0; S.ghost.style.opacity=(0.15+0.85*done).toFixed(3); }
 function updateProgress(){ el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
 function updateButtons(){ el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
 
@@ -651,15 +680,15 @@ function clearHints(){ if(S&&S.svg) S.svg.querySelectorAll(".arrow.hint").forEac
 function starsFor(){ return Math.max(1, 3-(S.undos+Math.floor(S.blocked/3))); }
 function marksBlock(fish){ return `<div class="marks"><h3>How to know it</h3><ul>${fish.marks.map(m=>`<li>${m}</li>`).join("")}</ul></div>`; }
 function mountFish(node,i){ const fish=FISH[i]; node.innerHTML=fishSVG(fish.spec);
-  if(fish.img){ const im=new Image(); im.className="fishphoto"; im.alt=fish.name+" photo";
-    im.onload=()=>{ node.innerHTML=""; node.appendChild(im); }; im.onerror=()=>{}; im.src=fish.img; } }
+  loadFishImage(i).then(im=>{ if(!im) return; const ph=new Image(); ph.className="fishphoto"; ph.alt=fish.name;
+    ph.onload=()=>{ node.innerHTML=""; node.appendChild(ph); }; ph.src=im.src; }); }
 
 function win(){
   const fish=FISH[S.level], earned=starsFor();
   store.set("aa_progress", String(Math.max(Number(store.get("aa_progress")||0), S.level+1)));
   const bestStars=Math.max(Number(store.get("aa_stars_"+S.level)||0), earned);
   store.set("aa_stars_"+S.level, String(bestStars)); renderHeaderStars(bestStars);
-  if(S.ghost){ S.ghost.classList.add("materialize"); }
+  if(S.ghost){ S.ghost.style.transition="opacity .8s ease"; S.ghost.style.opacity="1"; }
   else { for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv){ dv.classList.remove("faint"); dv.classList.add("lit"); } } }
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
   const last=S.level>=FISH.length-1;
@@ -679,18 +708,26 @@ function win(){
 function hideReveal(){ guard(); el("reveal").classList.remove("show"); }
 
 /* ---------- field guide ---------- */
-function openGuide(){
-  guard();
+function openGuide(){ guard(); renderGuideList(); el("guide").classList.add("show"); }
+function renderGuideList(){
   const caught=Number(store.get("aa_progress")||0); const scroll=el("guideScroll"); scroll.innerHTML="";
   FISH.forEach((fish,i)=>{ const got=i<caught; const c=document.createElement("div"); c.className="gcard"+(got?"":" locked");
     if(got){ c.innerHTML=`<div class="thumb" data-i="${i}"></div><div class="info"><h3>${fish.name}</h3>
         <div class="gsci">${fish.sci}</div><div class="gmark">${fish.marks[0]} · ${fish.marks[1]}</div><div class="tap">Tap to study ›</div></div>`;
-      c.onclick=()=>openDetail(i);
+      c.onclick=()=>renderGuideDetail(i);
     } else { c.innerHTML=`<div class="thumb">?</div><div class="info"><h3>Not yet caught</h3>
         <p>Clear level ${String(i+1).padStart(2,"0")} to add this species.</p></div>`; }
     scroll.appendChild(c); });
   scroll.querySelectorAll(".thumb[data-i]").forEach(t=>mountFish(t,+t.dataset.i));
-  el("guide").classList.add("show");
+  scroll.scrollTop=0;
+}
+function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("guideScroll");
+  scroll.innerHTML=`<button class="gback" id="gback">&#8249;&nbsp; All catches</button>
+    <div class="gdetail"><div class="fishwrap" id="guideFish"></div>
+    <div class="panel"><div class="caught">Field guide</div><h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
+    ${marksBlock(fish)}<p class="fact">${fish.fact}</p></div></div>`;
+  mountFish(el("guideFish"),i); scroll.scrollTop=0;
+  el("gback").onclick=()=>{ guard(); renderGuideList(); };
 }
 function closeGuide(){ guard(); el("guide").classList.remove("show"); }
 function openAbout(){
