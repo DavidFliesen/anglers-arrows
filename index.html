@@ -118,7 +118,8 @@
   .overlay.show{opacity:1;visibility:visible}
   #detail{z-index:90}
   #about{z-index:92}
-  body.tapguard .board, body.tapguard .controls, body.tapguard .guide-scroll{pointer-events:none !important}
+  body.tapguard .guide-scroll{pointer-events:none !important}
+  body.tapguard .board .arrow .hit,body.tapguard .board .arrow .head{pointer-events:none !important}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
   .fishwrap{width:min(74vw,300px);margin-bottom:-4px;z-index:2}
   .fishwrap .fish{width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.5));animation:sway 5s ease-in-out infinite}
@@ -261,7 +262,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="v15";
+const APP_VERSION="v16";
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -563,7 +564,13 @@ function generatePieces(cellsSet,rows,cols){
 
 /* ---------- state & board ---------- */
 const el=id=>document.getElementById(id);
-let _gT=null; function guard(ms){ document.body.classList.add("tapguard"); clearTimeout(_gT); _gT=setTimeout(()=>document.body.classList.remove("tapguard"), ms||430); }
+let _gT=null, _gUntil=0;
+function guard(ms){ _gUntil=Date.now()+(ms||380); document.body.classList.add("tapguard");
+  clearTimeout(_gT); _gT=setTimeout(unguard, (ms||380)+20); }
+function unguard(){ _gUntil=0; document.body.classList.remove("tapguard"); }
+// failsafe: if anything ever leaves the guard on, the next tap clears it
+document.addEventListener("pointerdown",()=>{ if(Date.now()>_gUntil) unguard(); }, true);
+setInterval(()=>{ if(Date.now()>_gUntil+400) unguard(); }, 1000);
 const board=el("board"); let S=null; const cellDiv=new Map();
 function starPath(){ return `<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18.9 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>`; }
 function starsSVG(n,cls){ let o=""; for(let i=0;i<3;i++) o+=`<svg class="${i<n?(cls||'on'):''}" viewBox="0 0 24 24">${starPath()}</svg>`; return o; }
@@ -578,8 +585,11 @@ async function startLevel(i){
   el("hintbar").textContent="Surfacing the next puzzle…"; el("bar").style.width="0%";
   hideReveal(); el("tryagain").classList.remove("show");
   const cols=levelWidth(i);
-  const raster=await rasterizeFish(i,cols);
-  const pieces=generatePieces(new Set(raster.cells.keys()),raster.rows,raster.cols);
+  let raster=null;
+  try{ raster=await rasterizeFish(i,cols); }catch(e){ raster=null; }
+  if(!raster||!raster.cells||raster.cells.size<10){ raster=fallbackFish(Math.max(6,Math.round(cols*0.7)),cols); }
+  let pieces=[];
+  try{ pieces=generatePieces(new Set(raster.cells.keys()),raster.rows,raster.cols); }catch(e){ pieces=[]; }
   const occ=new Map(), covered=new Set();
   for(const pc of pieces){ pc.alive=true; for(const [r,c] of pc.cells){ occ.set(r+","+c,pc.id); covered.add(r+","+c); } }
   S={level:i, rows:raster.rows, cols:raster.cols, cells:raster.cells, art:raster.art||null, fit:raster.fit||null, ghost:null, pieces, occ, covered,
@@ -587,7 +597,8 @@ async function startLevel(i){
   el("hintbar").textContent = i===0
     ? "Tap an arrow to send it swimming off — it slides away only if its path is clear."
     : "Clear every arrow to surface the species.";
-  renderBoard(true); updateProgress(); updateButtons();
+  try{ renderBoard(true); }catch(e){}
+  updateProgress(); updateButtons(); unguard();
 }
 function renderBoard(animateIn){
   board.style.gridTemplateColumns=`repeat(${S.cols},1fr)`; board.style.gridTemplateRows=`repeat(${S.rows},1fr)`;
@@ -644,21 +655,29 @@ function onTap(pc,g){
 function flyOff(pc,g){
   const [dr,dc]=DIRS[pc.dir];
   const shaft=g.querySelector(".shaft"), hit=g.querySelector(".hit"), head=g.querySelector(".head");
-  const pts=pc.cells.map(([r,c])=>[c+0.5,r+0.5]);
-  let bodyLen=0; for(let i=1;i<pts.length;i++) bodyLen+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
-  const hx=pts[pts.length-1][0], hy=pts[pts.length-1][1], D=Math.max(S.cols,S.rows)*1.8;
-  const full="M "+pts.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join(" L ")+` L ${(hx+dc*D).toFixed(2)} ${(hy+dr*D).toFixed(2)}`;
-  const dur=660, ease="cubic-bezier(.42,0,.7,.5)", dash=`${bodyLen.toFixed(2)} ${(bodyLen+D+2).toFixed(2)}`;
-  [shaft,hit].forEach(n=>{ if(!n) return; n.setAttribute("d",full); n.style.strokeDasharray=dash; n.style.strokeDashoffset="0"; });
-  if(shaft && shaft.getBBox) shaft.getBBox();                          // commit start state before transitioning
-  [shaft,hit].forEach(n=>{ if(n) n.style.transition=`stroke-dashoffset ${dur}ms ${ease}`; });
-  if(head) head.style.transition=`transform ${dur}ms ${ease}`;
-  requestAnimationFrame(()=>{
-    if(shaft) shaft.style.strokeDashoffset=`${(-D).toFixed(2)}`;
-    if(hit) hit.style.strokeDashoffset=`${(-D).toFixed(2)}`;
-    if(head) head.style.transform=`translate(${(dc*D).toFixed(2)}px, ${(dr*D).toFixed(2)}px)`;
-  });
-  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+30);
+  if(hit) hit.style.pointerEvents="none";
+  // cells[0] IS the head; build the path TAIL -> HEAD -> straight out the exit lane
+  const tailFirst=pc.cells.slice().reverse().map(([r,c])=>[c+0.5,r+0.5]);
+  let bodyLen=0; for(let i=1;i<tailFirst.length;i++) bodyLen+=Math.hypot(tailFirst[i][0]-tailFirst[i-1][0], tailFirst[i][1]-tailFirst[i-1][1]);
+  const hp=tailFirst[tailFirst.length-1], D=Math.max(S.cols,S.rows)*1.6;
+  const full="M "+tailFirst.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join(" L ")+
+             ` L ${(hp[0]+dc*D).toFixed(2)} ${(hp[1]+dr*D).toFixed(2)}`;
+  [shaft,hit].forEach(n=>{ if(n){ n.setAttribute("d",full); n.style.strokeDasharray=`${bodyLen.toFixed(2)} ${(bodyLen+D+4).toFixed(2)}`; n.style.strokeDashoffset="0"; } });
+  const dur=620+Math.min(260,bodyLen*26);
+  const t0=(typeof performance!=="undefined"?performance.now():Date.now());
+  const step=(now)=>{
+    let t=(now-t0)/dur; if(t>1) t=1;
+    const e=t<1 ? 1-Math.pow(1-t,2.2) : 1;         // ease-out: quick pull, gentle exit
+    const travel=e*D;
+    // the visible body window slides forward along the bent path, so the line follows the head
+    if(shaft) shaft.style.strokeDashoffset=(-travel).toFixed(2);
+    if(hit) hit.style.strokeDashoffset=(-travel).toFixed(2);
+    if(head) head.setAttribute("transform",`translate(${(dc*travel).toFixed(2)},${(dr*travel).toFixed(2)})`);
+    if(t<1) requestAnimationFrame(step);
+    else if(g.parentNode) g.parentNode.removeChild(g);
+  };
+  requestAnimationFrame(step);
+  setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+300);   // safety net
 }
 function setGhostOpacity(){ if(!S||!S.ghost) return; const done=S.total?(S.total-S.remaining)/S.total:0; S.ghost.style.opacity=(0.15+0.85*done).toFixed(3); }
 function updateProgress(){ el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
