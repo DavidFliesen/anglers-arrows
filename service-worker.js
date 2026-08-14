@@ -1,5 +1,5 @@
 /* Angler's Arrows — service worker (network-first for HTML so updates reach players) */
-const CACHE = "anglers-arrows-v13";
+const CACHE = "anglers-arrows-v15";
 const ASSETS = [
   ".","index.html","manifest.webmanifest",
   "icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png",

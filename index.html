@@ -28,6 +28,23 @@
     background:radial-gradient(120% 80% at 50% -10%, #123a72 0%, rgba(18,58,114,0) 55%),
       linear-gradient(180deg, var(--current) 0%, var(--deep) 42%, #041a3e 72%, var(--abyss) 100%);
     background-attachment:fixed;overflow-x:hidden;-webkit-user-select:none;user-select:none;}
+  /* ambient underwater scene (behind everything) */
+  .scene{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .scene .env{position:absolute;left:50%;bottom:-2vh;transform:translateX(-50%);
+    width:min(150vw,1500px);max-height:52vh;object-fit:contain;object-position:bottom;
+    opacity:0;filter:saturate(.6) brightness(.5) blur(.6px);transition:opacity 2s ease}
+  .scene .env.in{opacity:.3}
+  .scene .swimmer{position:absolute;will-change:transform;opacity:0;
+    filter:saturate(.72) brightness(.82) drop-shadow(0 6px 14px rgba(0,0,0,.35))}
+  .scene .swimmer img{display:block;width:100%;height:auto}
+  .scene .swimmer.flip img{transform:scaleX(-1)}   /* flip so fish always face the way they swim */
+  @keyframes swim-across{
+    0%{transform:translate3d(var(--x0),0,0) translateY(0);opacity:0}
+    8%{opacity:var(--op,.5)}
+    50%{transform:translate3d(calc((var(--x0) + var(--x1))/2),0,0) translateY(var(--bob,-10px))}
+    92%{opacity:var(--op,.5)}
+    100%{transform:translate3d(var(--x1),0,0) translateY(0);opacity:0}
+  }
   .bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
   .bubble{position:absolute;bottom:-40px;border-radius:50%;
     background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.4), rgba(127,227,245,.06) 60%, transparent 70%);
@@ -179,10 +196,11 @@
   body.immersive .board-shell{margin-top:8px}
 
   @media (max-width:360px){.brand h1{font-size:18px}.brand .mark{width:46px;height:46px;flex-basis:46px}.panel h2{font-size:25px}.marks li{font-size:14.5px}}
-  @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
+  @media (prefers-reduced-motion: reduce){.scene .swimmer{display:none}*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
 </style>
 </head>
 <body>
+<div class="scene" id="scene" aria-hidden="true"><img class="env" id="envImg" alt="" /></div>
 <div class="bubbles" id="bubbles" aria-hidden="true"></div>
 
 <div class="splash" id="splash">
@@ -243,7 +261,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="v13";
+const APP_VERSION="v15";
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -363,29 +381,13 @@ function mulberry(seed){let t=seed>>>0;return function(){t+=0x6D2B79F5;let r=Mat
 
 /* ---------- species: catchable fish, common ones first ---------- */
 const FISH = [
-  {name:"Bluegill",sci:"Lepomis macrochirus",
-   marks:["Deep, round, plate-like body","Solid dark flap on the gill cover","Small mouth; often faint vertical bars"],
-   fact:"The most-caught panfish in America — a bed of them will hit almost anything small.",
-   spec:{shape:"panfish",tail:"fan",dorsal:"spiny2",gillFlap:1,scales:1,bars:6,barOpacity:0.2,a:78,b:60,back:"#3f6b52",mid:"#7fa06a",belly:"#e8c766",finColor:"#4f6f57",barColor:"#2f5540",eyeRing:"#b8892f",aria:"deep-bodied bluegill"}},
   {name:"Largemouth Bass",sci:"Micropterus salmoides",
    marks:["Upper jaw reaches past the eye","Dark blotches joining into a side stripe","Deep notch between the two dorsal fins"],
    fact:"The jaw hinge sitting behind the eye is the quickest way to tell it from a smallmouth.",
    spec:{shape:"bass",tail:"forked",dorsal:"spiny2",scales:1,lateralBlotch:1,a:100,b:46,back:"#3d5f36",mid:"#7f9a5c",belly:"#eef0d8",finColor:"#4f6a3f",barColor:"#243a1c",eyeRing:"#8a7b2f",aria:"green largemouth bass"}},
-  {name:"Smallmouth Bass",sci:"Micropterus dolomieu",
-   marks:["Bronze to brown body","Vertical bars along the side","Red-tinted eye; jaw ends under the eye"],
-   fact:"Pound for pound one of the hardest-fighting freshwater fish — it loves rocky, moving water.",
-   spec:{shape:"bass",tail:"forked",dorsal:"spiny2",scales:1,bars:8,barOpacity:0.3,a:98,b:46,back:"#7a6a3a",mid:"#a99456",belly:"#e9dcae",finColor:"#6f5e34",barColor:"#4a3d1e",eyeRing:"#b23b2b",aria:"bronze smallmouth bass"}},
-  {name:"Black Crappie",sci:"Pomoxis nigromaculatus",
-   marks:["Deep, silvery, flattened body","Irregular black speckling (not neat rows)","Large dorsal fin set well forward"],
-   fact:"Schools suspend around brush and docks — find one crappie and you've usually found a dozen.",
-   spec:{shape:"panfish",tail:"fan",dorsal:"spiny2",scales:1,spots:26,seed:5,spotColor:"#2b3a2b",a:82,b:58,back:"#5a6d63",mid:"#9fb0a6",belly:"#eef2ee",finColor:"#5f7168",eyeRing:"#8a8a6a",aria:"speckled black crappie"}},
-  {name:"Yellow Perch",sci:"Perca flavescens",
-   marks:["Golden-yellow body","6–8 bold dark vertical bars","Orange lower fins in season"],
-   fact:"Its firm white fillets make it one of the best-eating panfish you can catch.",
-   spec:{shape:"bass",tail:"forked",dorsal:"spiny2",scales:1,bars:7,barOpacity:0.55,a:92,b:48,back:"#6d7a2e",mid:"#e0c24a",belly:"#f4e6a0",finColor:"#d98a2b",barColor:"#4a5320",eyeRing:"#c9a23a",aria:"yellow perch with dark bars"}},
   {name:"Channel Catfish",sci:"Ictalurus punctatus",
    marks:["Whisker-like barbels around the mouth","Smooth, scaleless skin","Deeply forked tail; small dark spots"],
-   fact:"Those barbels are covered in taste buds — it can smell and taste bait from across a pool.",
+   fact:"Those barbels are covered in taste buds \u2014 it can taste bait from across a pool.",
    spec:{shape:"catfish",tail:"forked",dorsal:"single",adipose:1,barbels:1,spots:14,seed:9,spotColor:"#3a4652",noLateral:1,a:104,b:44,back:"#4a5a66",mid:"#8fa0aa",belly:"#eef1f2",finColor:"#4a5a66",eyeRing:"#9aa0a4",aria:"channel catfish with barbels"}},
   {name:"Rainbow Trout",sci:"Oncorhynchus mykiss",
    marks:["Pink-red band down the side","Small fleshy adipose fin before the tail","Black spots over the back and tail"],
@@ -393,26 +395,26 @@ const FISH = [
    spec:{shape:"torpedo",tail:"forked",dorsal:"single",adipose:1,scales:1,spots:30,seed:3,spotColor:"#33413a",stripe:1,stripeColor:"#e06a86",a:104,b:40,back:"#5f7a6a",mid:"#b7c3bc",belly:"#f2f5f2",finColor:"#8ba08f",eyeRing:"#9a8f5a",aria:"rainbow trout with pink stripe"}},
   {name:"Redfish (Red Drum)",sci:"Sciaenops ocellatus",
    marks:["Copper-bronze back, pale belly","One (or more) black spot near the tail","Blunt nose, mouth angled downward"],
-   fact:"That tail spot fools predators into striking the wrong end — a Lowcountry inshore favorite.",
+   fact:"That tail spot fools predators into striking the wrong end \u2014 a Lowcountry favorite.",
    spec:{shape:"bass",tail:"crescent",dorsal:"spiny2",scales:1,tailSpot:1,a:104,b:46,back:"#b5642a",mid:"#d99a54",belly:"#f2e2c2",finColor:"#b5642a",eyeRing:"#9a6a2a",aria:"copper redfish with tail spot"}},
-  {name:"Spotted Seatrout",sci:"Cynoscion nebulosus",
-   marks:["Silvery body with dark round spots on back and tail","Two prominent canine teeth","Slender, trout-like shape"],
-   fact:"A prime inshore target over grass flats — locals call it the speckled trout.",
-   spec:{shape:"torpedo",tail:"crescent",dorsal:"spiny2",scales:1,spots:24,seed:11,spotColor:"#2b3340",a:106,b:40,back:"#4f5e64",mid:"#9aa6a2",belly:"#eef1ee",finColor:"#5a6a66",eyeRing:"#b0a860",aria:"spotted seatrout"}},
-  {name:"Striped Bass",sci:"Morone saxatilis",
-   marks:["Silver body with 7–8 dark horizontal stripes","Streamlined, powerful build","Two separate dorsal fins"],
-   fact:"It runs from salt to fresh to spawn, and stocked 'stripers' now fight in lakes far inland.",
-   spec:{shape:"torpedo",tail:"forked",dorsal:"spiny2",scales:1,hstripes:7,a:106,b:42,back:"#556673",mid:"#b8c2c6",belly:"#f2f4f5",finColor:"#5a6a72",barColor:"#2b333a",eyeRing:"#9aa0a2",aria:"striped bass with horizontal stripes"}},
   {name:"Flounder",sci:"Paralichthys",
    marks:["Flat, oval body that lies on its side","Both eyes on the same (upper) side","Sandy brown with darker spots"],
-   fact:"It buries in the bottom and ambushes upward — set the hook late, it takes bait sideways.",
+   fact:"It buries in the bottom and ambushes upward \u2014 set the hook late, it takes bait sideways.",
    spec:{shape:"flatfish",tail:"fan",dorsal:"long",scales:0,spots:20,seed:13,spotColor:"#5a4a34",a:86,b:62,back:"#6b5a3e",mid:"#93815c",belly:"#cdbf9a",finColor:"#6b5a3e",eyeRing:"#7a6a44",noLateral:1,aria:"flat oval flounder"}},
-  {name:"Sheepshead",sci:"Archosargus probatocephalus",
-   marks:["Bold black vertical bars on silver","Deep, high body","Human-like teeth for crushing shellfish"],
-   fact:"Those flat teeth crunch barnacles and crabs — fish structure and pilings to find them.",
-   spec:{shape:"panfish",tail:"fan",dorsal:"spiny2",scales:1,bars:6,barOpacity:0.8,a:88,b:56,back:"#8f9298",mid:"#c7cace",belly:"#eef0f2",finColor:"#5a5e63",barColor:"#20242a",eyeRing:"#8a8d92",aria:"barred sheepshead"}},
+  {name:"Mudfish (Bowfin)",sci:"Amia calva",
+   marks:["Long dorsal fin running most of the back","Rounded tail, often with a dark eyespot","Mottled olive, tubular body"],
+   fact:"A living fossil \u2014 it gulps air and survives low-oxygen swamps where other fish can't.",
+   spec:{shape:"catfish",tail:"round",dorsal:"long",scales:1,spots:16,seed:4,spotColor:"#463a20",tailSpot:1,a:106,b:40,back:"#5a5a34",mid:"#8a8652",belly:"#d9d2a8",finColor:"#5a5a34",eyeRing:"#b0862a",aria:"elongate mottled mudfish"}},
+  {name:"Swordfish",sci:"Xiphias gladius",
+   marks:["Long, flat sword-like bill","Tall, sickle-shaped first dorsal fin","Stiff crescent tail; no pelvic fins"],
+   fact:"The bill slashes sideways through bait schools, then it circles back to feed.",
+   spec:{shape:"torpedo",tail:"crescent",dorsal:"single",bill:48,scales:1,a:100,b:32,back:"#33506e",mid:"#6a86a0",belly:"#d2dae2",finColor:"#2b4258",eyeRing:"#8a9aa8",aria:"swordfish with a long bill"}},
+  {name:"Anglerfish",sci:"Melanocetus johnsonii",
+   marks:["Glowing lure on a stalk over the mouth","Huge mouth full of needle teeth","Round, dark, deep-sea body"],
+   fact:"It dangles a living light to draw prey close in the lightless deep sea.",
+   spec:{shape:"panfish",tail:"fan",dorsal:"spiny2",scales:0,a:82,b:64,back:"#241a12",mid:"#463420",belly:"#6a4e30",finColor:"#241a12",eyeRing:"#c9a23a",aria:"round deep-sea anglerfish"}},
 ];
-const SLUGS=["bluegill","largemouth-bass","smallmouth-bass","black-crappie","yellow-perch","channel-catfish","rainbow-trout","redfish","spotted-seatrout","striped-bass","flounder","sheepshead"];
+const SLUGS=["largemouth-bass","channel-catfish","rainbow-trout","redfish","flounder","mudfish","swordfish","anglerfish"];
 FISH.forEach((f,i)=>{ f.slug=SLUGS[i]; f.img="images/fish/"+SLUGS[i]+".jpg"; });
 
 function levelWidth(i){ return 24 + Math.round(i * 8 / (FISH.length-1)); } // 24..32
@@ -570,7 +572,7 @@ function renderHeaderStars(best){ const w=el("stars"); w.innerHTML="";
     const svg=s.firstChild; svg.classList.add("s"); if(i<best) svg.classList.add("on"); w.appendChild(svg); } }
 
 async function startLevel(i){
-  guard();
+  guard(); setEnvironment();
   el("level").textContent="Level "+String(i+1).padStart(2,"0");
   renderHeaderStars(Number(store.get("aa_stars_"+i)||0));
   el("hintbar").textContent="Surfacing the next puzzle…"; el("bar").style.width="0%";
@@ -766,12 +768,62 @@ el("taQuit").onclick=()=>{ guard(); el("tryagain").classList.remove("show"); res
 el("taReset").onclick=()=>{ guard(); el("tryagain").classList.remove("show"); reset(); };
 el("playBtn").onclick=()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); };
 
+/* ---------- ambient underwater scene ---------- */
+const ENVS=["images/scenes/coral-reef.png","images/scenes/sunken-pirate-ship.png"];
+// which way each source image's HEAD points, so we only ever flip to match travel direction
+const FACES={"largemouth-bass":"right","channel-catfish":"left","rainbow-trout":"right","redfish":"right",
+             "flounder":"right","mudfish":"right","swordfish":"right","anglerfish":"left"};
+let envIdx=-1, swimTimer=null;
+function setEnvironment(){                     // only called when a new game/level starts
+  const img=el("envImg"); if(!img||!ENVS.length) return;
+  const next=(envIdx+1+Math.floor(Math.random()*ENVS.length))%ENVS.length;
+  if(next===envIdx) return;                    // keep the same backdrop between menus
+  envIdx=next;
+  const probe=new Image();
+  probe.onload=()=>{ img.classList.remove("in"); setTimeout(()=>{ img.src=probe.src; img.classList.add("in"); },400); };
+  probe.onerror=()=>{};
+  probe.src=ENVS[envIdx];
+}
+function spawnSwimmer(){
+  const box=el("scene"); if(!box) return;
+  const live=box.querySelectorAll(".swimmer").length;
+  if(live>=3 || document.hidden) return;                  // keep it sparse — never busy
+  const fish=FISH[(Math.random()*FISH.length)|0];
+  loadFishImage(FISH.indexOf(fish)).then(src=>{
+    if(!src) return;
+    const d=document.createElement("div"); d.className="swimmer";
+    const im=new Image(); im.src=src.src; im.alt=""; d.appendChild(im);
+    const toRight=Math.random()<0.5;
+    const w=90+Math.random()*130;                          // 90–220px
+    const depth=0.35+Math.random()*0.4;                    // vertical band, mid-screen
+    d.style.width=w+"px";
+    d.style.top=(depth*100).toFixed(1)+"vh";
+    d.style.setProperty("--x0", toRight ? "-30vw" : "115vw");
+    d.style.setProperty("--x1", toRight ? "115vw" : "-30vw");
+    d.style.setProperty("--bob", (-6-Math.random()*14).toFixed(0)+"px");
+    d.style.setProperty("--op", (0.16+Math.random()*0.16).toFixed(2));
+    const faces=FACES[fish.slug]||"right";
+    if((toRight && faces==="left") || (!toRight && faces==="right")) d.classList.add("flip");
+    const dur=42+Math.random()*38;                         // slow, calm drift
+    d.style.animation=`swim-across ${dur}s linear forwards`;
+    d.addEventListener("animationend",()=>d.remove());
+    box.appendChild(d);
+  });
+}
+function startAmbient(){
+  if(swimTimer) return;
+  setTimeout(spawnSwimmer, 1200);
+  swimTimer=setInterval(()=>{ if(!document.hidden) spawnSwimmer(); }, 14000);
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) el("scene").querySelectorAll(".swimmer").forEach(n=>n.remove()); });
+}
+
 /* bubbles */
 (function(){const box=el("bubbles");for(let i=0;i<12;i++){const b=document.createElement("div");b.className="bubble";
   const s=4+Math.random()*13;b.style.width=s+"px";b.style.height=s+"px";b.style.left=(Math.random()*100)+"%";
   b.style.setProperty("--drift",(Math.random()*40-20)+"px");b.style.animationDuration=(10+Math.random()*12)+"s";
   b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
 
+startAmbient();
 startLevel(Math.min(Number(store.get("aa_progress")||0), FISH.length-1));
 try{ document.getElementById("ver").textContent="Angler\u2019s Arrows \u00b7 "+APP_VERSION; }catch(e){}
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }
