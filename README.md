@@ -1,4 +1,20 @@
-# Angler's Arrows — Fish Arrow Puzzles
+# Angler's Arrows — v1.17.0
+
+**Version 1.17.0** · ARTEZIQ · updated 2026-08-14
+
+Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
+reveal the species artwork, then learn to recognize it by its features.
+
+### Changelog
+- **1.17.0** — Fixed "Your Catch" freezing the UI; every handler is now crash-proofed with an
+  on-screen error toast. Added the ARTEZIQ brand/version bar to the bottom of every screen.
+  Switched to semantic versioning.
+- **v16** — Fixed dead input after level 1 (tap-guard); arrows now snake out head-first along
+  their own bends (the head end was being animated from the wrong cell).
+- **v15** — Roster rebuilt to 8 species with transparent artwork (exact fish-shaped puzzles);
+  ambient underwater background with drifting fish + reef/shipwreck environments.
+- **v13/v14** — Progressive artwork reveal as arrows clear; PNG support; thinner arrow tips.
+- **v12** — Field Guide rebuilt as an in-panel list/detail; bigger board.
 
 A calm, offline-first PWA puzzle. **Every level is a fish built entirely out of arrow tiles.**
 Tap an arrow to send it swimming off the board — it only leaves if its straight-line path to
