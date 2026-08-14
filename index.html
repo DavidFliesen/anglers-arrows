@@ -272,7 +272,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.17.0";
+const APP_VERSION="1.18.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -435,12 +435,22 @@ const MINLEN=3, MAXLEN=7;
 
 /* ---------- rasterize fish into colored cells ---------- */
 const rasterCache={}, imgCache={};
-function loadFishImage(idx){ const f=FISH[idx]; if(!f.slug) return Promise.resolve(null);
-  if(idx in imgCache) return Promise.resolve(imgCache[idx]);
+const thumbCache={};
+function loadImageAt(dir, slug, cache, key){
+  if(key in cache) return Promise.resolve(cache[key]);
   const exts=["png","jpg","jpeg","webp"];
-  return new Promise((res)=>{ let k=0; const go=()=>{ if(k>=exts.length){ imgCache[idx]=null; return res(null); }
-    const im=new Image(); im.onload=()=>{ imgCache[idx]=im; res(im); }; im.onerror=()=>{ k++; go(); };
-    im.src="images/fish/"+f.slug+"."+exts[k]; }; go(); }); }
+  return new Promise((res)=>{ let k=0; const go=()=>{ if(k>=exts.length){ cache[key]=null; return res(null); }
+    const im=new Image(); im.decoding="async";
+    im.onload=()=>{ cache[key]=im; res(im); }; im.onerror=()=>{ k++; go(); };
+    im.src=dir+slug+"."+exts[k]; }; go(); }); }
+// Full-resolution artwork: used ONLY for the board mask and the single reveal/detail card.
+function loadFishImage(idx){ const f=FISH[idx]; if(!f||!f.slug) return Promise.resolve(null);
+  return loadImageAt("images/fish/", f.slug, imgCache, idx); }
+// Small thumbnails: used for the Field Guide list and the drifting background fish.
+// (Decoding eight full-size plates at once is what previously exhausted memory on iPad.)
+function loadFishThumb(idx){ const f=FISH[idx]; if(!f||!f.slug) return Promise.resolve(null);
+  return loadImageAt("images/thumbs/", f.slug, thumbCache, idx)
+    .then(im=>im||loadFishImage(idx)); }
 
 async function rasterizeFish(idx, cols){
   const key=idx+"@"+cols; if(rasterCache[key]) return rasterCache[key];
@@ -692,17 +702,17 @@ function flyOff(pc,g){
   setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+300);   // safety net
 }
 function setGhostOpacity(){ if(!S||!S.ghost) return; const done=S.total?(S.total-S.remaining)/S.total:0; S.ghost.style.opacity=(0.15+0.85*done).toFixed(3); }
-function updateProgress(){ el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
-function updateButtons(){ el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
+function updateProgress(){ if(!S) return; el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
+function updateButtons(){ if(!S) return; el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
 
-function undo(){ if(!S.history.length||S.won||S.busy) return;
+function undo(){ if(!S) return; if(!S.history.length||S.won||S.busy) return;
   const id=S.history.pop(); const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id);
   S.remaining++; S.moves++; S.undos++; renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
-function reset(){ if(S.busy||S.won) return;
+function reset(){ if(!S||S.busy||S.won) return;
   for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
   S.remaining=S.total; S.history=[]; S.blocked=0; el("tryagain").classList.remove("show");
   renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Fresh start — study the fish and plan your order."; }
-function hint(){ if(S.won||S.busy) return; clearHints();
+function hint(){ if(!S||S.won||S.busy) return; clearHints();
   const firable=S.pieces.filter(pc=>pc.alive&&headRayClear(pc)); if(!firable.length) return;
   const pc=firable[(Math.random()*firable.length)|0];
   const g=S.svg&&S.svg.querySelector(`.arrow[data-id="${pc.id}"]`);
@@ -712,9 +722,13 @@ function clearHints(){ if(S&&S.svg) S.svg.querySelectorAll(".arrow.hint").forEac
 
 function starsFor(){ return Math.max(1, 3-(S.undos+Math.floor(S.blocked/3))); }
 function marksBlock(fish){ return `<div class="marks"><h3>How to know it</h3><ul>${fish.marks.map(m=>`<li>${m}</li>`).join("")}</ul></div>`; }
-function mountFish(node,i){ const fish=FISH[i]; node.innerHTML=fishSVG(fish.spec);
-  loadFishImage(i).then(im=>{ if(!im) return; const ph=new Image(); ph.className="fishphoto"; ph.alt=fish.name;
-    ph.onload=()=>{ node.innerHTML=""; node.appendChild(ph); }; ph.src=im.src; }); }
+function mountFish(node,i,small){ const fish=FISH[i]; if(!node||!fish) return;
+  node.innerHTML=fishSVG(fish.spec);
+  const get = small ? loadFishThumb(i) : loadFishImage(i);
+  get.then(im=>{ if(!im||!node.isConnected) return;
+    const ph=new Image(); ph.className="fishphoto"; ph.alt=fish.name; ph.decoding="async";
+    ph.onload=()=>{ if(node.isConnected){ node.innerHTML=""; node.appendChild(ph); } };
+    ph.src=im.src; }).catch(()=>{}); }
 
 function win(){
   const fish=FISH[S.level], earned=starsFor();
@@ -733,8 +747,8 @@ function win(){
       <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta">${cta}</div></div>`;
     guard(); el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
-    if(last) el("againBtn").onclick=()=>startLevel(0);
-    else{ el("nextBtn").onclick=()=>startLevel(S.level+1); el("replayBtn").onclick=()=>startLevel(S.level); }
+    if(last) on("againBtn",()=>startLevel(0));
+    else{ on("nextBtn",()=>startLevel(S.level+1)); on("replayBtn",()=>startLevel(S.level)); }
   };
   if(S.ghost) setTimeout(show, 820); else show();
 }
@@ -757,7 +771,8 @@ function renderGuideList(){
     } else { c.innerHTML=`<div class="thumb">?</div><div class="info"><h3>Not yet caught</h3>
         <p>Clear level ${String(i+1).padStart(2,"0")} to add this species.</p></div>`; }
     scroll.appendChild(c); });
-  scroll.querySelectorAll(".thumb[data-i]").forEach(t=>{ try{ mountFish(t,+t.dataset.i); }catch(e){} });
+  const thumbs=[...scroll.querySelectorAll(".thumb[data-i]")];
+  thumbs.forEach((t,n)=>setTimeout(()=>{ try{ mountFish(t,+t.dataset.i,true); }catch(e){} }, n*60));
   scroll.scrollTop=0;
 }
 function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("guideScroll");
@@ -767,7 +782,7 @@ function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("gui
     ${marksBlock(fish)}<p class="fact">${fish.fact}</p></div></div>`;
   try{ mountFish(el("guideFish"),i); }catch(e){}
   scroll.scrollTop=0;
-  el("gback").onclick=()=>{ try{ guard(); renderGuideList(); }catch(e){ unguard(); } };
+  on("gback",()=>{ guard(); renderGuideList(); });
 }
 function closeGuide(){ guard(); el("guide").classList.remove("show"); }
 function openAbout(){
@@ -785,7 +800,7 @@ function openDetail(i){ guard(); const fish=FISH[i];
       <div class="caught">Field guide</div><h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
       ${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta"><button class="btn primary" id="detailClose">Close</button></div></div>`;
-  el("detail").classList.add("show"); mountFish(el("detailFish"),i); el("detailClose").onclick=()=>{ guard(); el("detail").classList.remove("show"); };
+  el("detail").classList.add("show"); mountFish(el("detailFish"),i); on("detailClose",()=>{ guard(); el("detail").classList.remove("show"); });
 }
 
 /* ---------- fullscreen (real where supported, immersive fallback for iOS) ---------- */
@@ -839,7 +854,7 @@ function spawnSwimmer(){
   const live=box.querySelectorAll(".swimmer").length;
   if(live>=3 || document.hidden) return;                  // keep it sparse — never busy
   const fish=FISH[(Math.random()*FISH.length)|0];
-  loadFishImage(FISH.indexOf(fish)).then(src=>{
+  loadFishThumb(FISH.indexOf(fish)).then(src=>{
     if(!src) return;
     const d=document.createElement("div"); d.className="swimmer";
     const im=new Image(); im.src=src.src; im.alt=""; d.appendChild(im);
