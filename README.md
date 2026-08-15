@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.19.0
+# Angler's Arrows — v1.20.0
 
-**Version 1.19.0** · ARTEZIQ · updated 2026-08-15
+**Version 1.20.0** · ARTEZIQ · updated 2026-08-15
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.20.0** — "Your Catch" renamed **Fish Caught** (button and panel title). Image credits moved
+  off the About screen onto each species page, parsed per-species from `images/fish/CREDITS.txt`.
+  Added a **Fish Caught** button at the bottom of every species page. Shipped a corrected
+  CREDITS.txt for the current artwork.
 - **1.19.0** — "Your Catch" now force-opens with inline styles and is re-appended to the top of the
   document, so no CSS/stacking condition can hide it. Arrows restyled to match classic arrow-maze
   games: thin uniform lines, rounded corners at every bend, slim sharp tips, and arrowheads always
