@@ -157,7 +157,9 @@
   .marks li:last-child{margin-bottom:0}
   .marks li::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;margin-top:6px;background:linear-gradient(180deg,var(--aqua-hi),var(--aqua-lo))}
   .panel .fact{color:#dbe7fb;font-size:14.5px;line-height:1.55;margin:14px 2px 0}
-  .cta{margin-top:18px;width:100%;display:flex;gap:10px}
+  .cta{margin-top:18px;width:100%;display:flex;gap:8px;flex-wrap:wrap}
+  .cta .btn{flex:1 1 0;min-width:96px;white-space:nowrap}
+  @media (max-width:380px){ .cta .btn{font-size:13.5px;padding:14px 6px;min-width:88px} }
   .btn{flex:1;border:1px solid rgba(169,192,224,.26);background:rgba(255,255,255,.06);color:var(--foam);
     font-family:var(--font);font-weight:800;font-size:15px;padding:15px 10px;border-radius:15px;cursor:pointer;transition:transform .1s ease}
   .btn:active{transform:translateY(1px)}
@@ -286,7 +288,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.23.0";
+const APP_VERSION="1.24.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -796,14 +798,16 @@ function win(){
   else { for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv){ dv.classList.remove("faint"); dv.classList.add("lit"); } } }
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
   const last=S.level>=FISH.length-1;
-  const cta = last ? `<button class="btn primary" id="againBtn">Dive again</button>`
-    : `<button class="btn" id="replayBtn">Replay</button><button class="btn primary" id="nextBtn">Next fish</button>`;
+  const cta = last
+    ? `<button class="btn" id="caughtBtn">Fish Caught</button><button class="btn primary" id="againBtn">Dive again</button>`
+    : `<button class="btn" id="replayBtn">Replay</button><button class="btn" id="caughtBtn">Fish Caught</button><button class="btn primary" id="nextBtn">Next fish</button>`;
   const show=()=>{
     el("revealCard").innerHTML=`<div class="fishwrap" id="revealFish"></div><div class="panel">
       <div class="earned">${starsSVG(earned)}</div><div class="caught">Species identified</div>
       <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta">${cta}</div></div>`;
     guard(); el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
+    on("caughtBtn",openGuide);
     if(last) on("againBtn",()=>startLevel(0));
     else{ on("nextBtn",()=>startLevel(S.level+1)); on("replayBtn",()=>startLevel(S.level)); }
   };
