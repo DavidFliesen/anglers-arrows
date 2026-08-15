@@ -1,64 +1,35 @@
-Angler's Arrows — image credits (Wikimedia Commons)
-====================================================
+Angler's Arrows — image credits
+===============================
+Each entry below is shown on that species' page inside the app (Fish Caught → tap a fish).
+Format:  <slug>.<ext> / File: / by <author> — <licence> / <source url>
 
-bluegill.jpg
-  File:Lepomis macrochirus UMFS 2014 2.JPG
-  by Fredlyfish4 — CC BY-SA 3.0
-  https://commons.wikimedia.org/wiki/File:Lepomis_macrochirus_UMFS_2014_2.JPG
+largemouth-bass.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-largemouth-bass.jpg
-  File:Micropterus salmoides-transformed.jpeg
-  by Drawing by Duane Raver.
+channel-catfish.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-The original uploader was Tkinias at English Wikipedia. — Public domain
-  https://commons.wikimedia.org/wiki/File:Micropterus_salmoides-transformed.jpeg
+rainbow-trout.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-smallmouth-bass.jpg
-  File:Micropterus dolomieu smallmouth bass fish.jpg
-  by Raver Duane, U.S. Fish and Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Micropterus_dolomieu_smallmouth_bass_fish.jpg
+redfish.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-black-crappie.jpg
-  File:Black Crappie (Pomoxis nigromaculatus).jpg
-  by USFWS Mountain Prairie — Public domain
-  https://commons.wikimedia.org/wiki/File:Black_Crappie_(Pomoxis_nigromaculatus).jpg
+flounder.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-yellow-perch.jpg
-  File:Yellow perch fish perca flavescens.jpg
-  by Raver Duane, U.S. Fish and Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Yellow_perch_fish_perca_flavescens.jpg
+mudfish.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-channel-catfish.jpg
-  File:Ictalurus punctatus (white background).png
-  by Duane Raver — Public domain
-  https://commons.wikimedia.org/wiki/File:Ictalurus_punctatus_(white_background).png
+swordfish.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-rainbow-trout.jpg
-  File:Oncorhynchus mykiss mid res 150dpi whiteBG.jpg
-  by Raver, Duane, US Fish &amp; Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Oncorhynchus_mykiss_mid_res_150dpi_whiteBG.jpg
+anglerfish.png
+  by Original artwork created for Angler's Arrows (ARTEZIQ) — All rights reserved
 
-redfish.jpg
-  File:Red drum sciaenops ocellata.jpg
-  by Raver Duane, U.S. Fish and Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Red_drum_sciaenops_ocellata.jpg
-
-spotted-seatrout.jpg
-  File:Spotted seatrout fish cynoscion nebulosus.jpg
-  by Raver Duane, U.S. Fish and Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Spotted_seatrout_fish_cynoscion_nebulosus.jpg
-
-striped-bass.jpg
-  File:Striped bass morone saxatilis fish (white background).jpg
-  by Raver Duane, U.S. Fish and Wildlife Service — Public domain
-  https://commons.wikimedia.org/wiki/File:Striped_bass_morone_saxatilis_fish_(white_background).jpg
-
-flounder.jpg
-  File:Paralichthys lethostigma.jpg
-  by SEFSC Pascagoula Laboratory; Collection of Brandi Noble, NOAA/NMFS/SEFSC — Public domain
-  https://commons.wikimedia.org/wiki/File:Paralichthys_lethostigma.jpg
-
-sheepshead.jpg
-  File:Sheepshead.jpg
-  by Unknown — Public domain
-  https://commons.wikimedia.org/wiki/File:Sheepshead.jpg
+# If you swap in a public-domain plate (e.g. USFWS / Duane Raver), replace that
+# species' block with:
+#   <slug>.png
+#     File:<original file name>
+#     by <author> — <licence>
+#     <source url>
