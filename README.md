@@ -1,11 +1,14 @@
-# Angler's Arrows — v1.21.0
+# Angler's Arrows — v1.22.0
 
-**Version 1.21.0** · ARTEZIQ · updated 2026-08-15
+**Version 1.22.0** · ARTEZIQ · updated 2026-08-15
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.22.0** — Tapping a blocked arrow now shows a running warning under the board:
+  "Wrong choice N of 6 this game. Choose wisely." in amber with a shake, clearing on the next
+  successful move, reset, or new level.
 - **1.21.0** — Six wrong taps now raise a clear "6 wrong arrows" prompt (with the running count and
   a **Try again** button that restarts the same fish). Reveal curve retuned: the artwork starts at 5%
   opacity, rises only to 50% as arrows clear, then snaps to 100% with a scale-pop on the final move.

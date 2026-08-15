@@ -279,7 +279,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.21.0";
+const APP_VERSION="1.22.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -625,6 +625,7 @@ async function startLevel(i){
   for(const pc of pieces){ pc.alive=true; for(const [r,c] of pc.cells){ occ.set(r+","+c,pc.id); covered.add(r+","+c); } }
   S={level:i, rows:raster.rows, cols:raster.cols, cells:raster.cells, art:raster.art||null, fit:raster.fit||null, ghost:null, pieces, occ, covered,
      total:pieces.length, remaining:pieces.length, moves:0, undos:0, blocked:0, history:[], won:false, busy:false};
+  el("hintbar").classList.remove("warn","shakeit");
   el("hintbar").textContent = i===0
     ? "Tap an arrow to send it swimming off — it slides away only if its path is clear."
     : "Clear every arrow to surface the species.";
@@ -689,7 +690,9 @@ function onTap(pc,g){
   if(!headRayClear(pc)){
     g.classList.remove("shake"); void g.getBoundingClientRect(); g.classList.add("shake");
     S.blocked++; if(navigator.vibrate) navigator.vibrate(16);
-    el("hintbar").textContent="Blocked — its way off the board is covered. Clear that lane first.";
+    const hb=el("hintbar");
+    hb.innerHTML=`Wrong choice <b>${S.blocked}</b> of 6 this game. Choose wisely.`;
+    hb.classList.add("warn"); hb.classList.remove("shakeit"); void hb.offsetWidth; hb.classList.add("shakeit");
     if(S.blocked%6===0){ guard();
       const m=el("taMsg");
       if(m) m.textContent=`You tapped ${S.blocked} arrows that couldn\u2019t move. An arrow only slides off when its path to the edge of the board is clear \u2014 clear whatever is blocking it first.`;
@@ -704,7 +707,8 @@ function onTap(pc,g){
     if(dv){ dv.classList.remove("faint"); dv.classList.add("lit","pop"); setTimeout(()=>dv.classList.remove("pop"),440); } }
   if(navigator.vibrate) navigator.vibrate(8);
   updateProgress(); updateButtons(); setGhostOpacity();
-  el("hintbar").textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
+  const hb2=el("hintbar"); hb2.classList.remove("warn","shakeit");
+  hb2.textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
   if(S.remaining===0){ S.won=true; setTimeout(win,540); }
 }
 function flyOff(pc,g){
@@ -749,7 +753,9 @@ function undo(){ if(!S) return; if(!S.history.length||S.won||S.busy) return;
 function reset(){ if(!S||S.busy||S.won) return;
   for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
   S.remaining=S.total; S.history=[]; S.blocked=0; forceShow(el("tryagain"), false);
-  renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Fresh start — study the fish and plan your order."; }
+  renderBoard(false); updateProgress(); updateButtons();
+  el("hintbar").classList.remove("warn","shakeit");
+  el("hintbar").textContent="Fresh start — study the fish and plan your order."; }
 function hint(){ if(!S||S.won||S.busy) return; clearHints();
   const firable=S.pieces.filter(pc=>pc.alive&&headRayClear(pc)); if(!firable.length) return;
   const pc=firable[(Math.random()*firable.length)|0];
