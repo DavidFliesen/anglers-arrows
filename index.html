@@ -288,7 +288,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.24.0";
+const APP_VERSION="1.25.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -825,8 +825,11 @@ function forceShow(node,on){
   } else { node.classList.remove("show");
     node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
 }
+let revealWasOpen=false;
+function revealIsOpen(){ const n=el("reveal"); return !!n && (n.classList.contains("show") || n.style.visibility==="visible"); }
 function openGuide(){
   guard();
+  revealWasOpen = revealIsOpen();                      // came from the level-complete card? remember it
   ["reveal","detail","about"].forEach(id=>{ const n=el(id); if(n){ n.classList.remove("show"); n.style.opacity=""; n.style.visibility=""; } });
   forceShow(el("guide"), true);                        // open FIRST, unconditionally
   try{ renderGuideList(); }
@@ -860,7 +863,16 @@ function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("gui
   on("gback",()=>{ guard(); renderGuideList(); });
   on("gback2",()=>{ guard(); renderGuideList(); });
 }
-function closeGuide(){ guard(); forceShow(el("guide"), false); }
+function closeGuide(){
+  guard(); forceShow(el("guide"), false);
+  // returning from Fish Caught must not strand a finished level with no way forward
+  if(revealWasOpen || (S && S.won)){ revealWasOpen=false; reopenReveal(); }
+}
+function reopenReveal(){
+  const card=el("revealCard");
+  if(!card || !card.querySelector(".cta")) return;      // nothing to restore
+  forceShow(el("reveal"), true);
+}
 function openAbout(){ guard(); el("about").classList.add("show"); }
 
 /* ---------- per-species image credits (parsed from images/fish/CREDITS.txt) ---------- */

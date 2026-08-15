@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.24.0
+# Angler's Arrows — v1.25.0
 
-**Version 1.24.0** · ARTEZIQ · updated 2026-08-15
+**Version 1.25.0** · ARTEZIQ · updated 2026-08-15
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.25.0** — Fixed being stranded after opening **Fish Caught** from the level-complete card:
+  opening the list hid the win card and nothing restored it, leaving a finished level with no way to
+  advance. Closing the list now brings the win card back (Replay / Fish Caught / Next fish), with a
+  safety net that restores it any time a completed level has no card showing.
 - **1.24.0** — Added a **Fish Caught** button to the level-complete card, between Replay and Next
   fish (and beside Dive again on the final level). Button row now wraps and scales on narrow screens.
 - **1.23.0** — Ambient scene brought up: environments 30%→46% opacity and brighter, drifting fish
