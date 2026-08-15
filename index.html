@@ -262,7 +262,8 @@
 </div></div>
 
 <div class="mini" id="tryagain" role="dialog" aria-modal="true">
-  <div class="box"><h3>Six blocked taps</h3><p>An arrow only slides off if its path to the edge is clear. Restart this fish, or head back to the start screen?</p>
+  <div class="box"><h3>6 wrong arrows</h3>
+  <p id="taMsg">You tapped 6 arrows that couldn\u2019t move. An arrow only slides off when its path to the edge of the board is clear.</p>
   <div class="row"><button class="btn" id="taQuit" type="button">Quit</button><button class="btn primary" id="taReset" type="button">Try again</button></div></div>
 </div>
 
@@ -278,7 +279,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.20.0";
+const APP_VERSION="1.21.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -613,7 +614,7 @@ async function startLevel(i){
   el("level").textContent="Level "+String(i+1).padStart(2,"0");
   renderHeaderStars(Number(store.get("aa_stars_"+i)||0));
   el("hintbar").textContent="Surfacing the next puzzle…"; el("bar").style.width="0%";
-  hideReveal(); el("tryagain").classList.remove("show");
+  hideReveal(); forceShow(el("tryagain"), false);
   const cols=levelWidth(i);
   let raster=null;
   try{ raster=await rasterizeFish(i,cols); }catch(e){ raster=null; }
@@ -689,7 +690,11 @@ function onTap(pc,g){
     g.classList.remove("shake"); void g.getBoundingClientRect(); g.classList.add("shake");
     S.blocked++; if(navigator.vibrate) navigator.vibrate(16);
     el("hintbar").textContent="Blocked — its way off the board is covered. Clear that lane first.";
-    if(S.blocked%6===0){ guard(); el("tryagain").classList.add("show"); }
+    if(S.blocked%6===0){ guard();
+      const m=el("taMsg");
+      if(m) m.textContent=`You tapped ${S.blocked} arrows that couldn\u2019t move. An arrow only slides off when its path to the edge of the board is clear \u2014 clear whatever is blocking it first.`;
+      forceShow(el("tryagain"), true);
+    }
     return;
   }
   pc.alive=false; for(const [r,c] of pc.cells) S.occ.delete(r+","+c);
@@ -728,7 +733,13 @@ function flyOff(pc,g){
   requestAnimationFrame(step);
   setTimeout(()=>{ if(g.parentNode) g.parentNode.removeChild(g); }, dur+300);   // safety net
 }
-function setGhostOpacity(){ if(!S||!S.ghost) return; const done=S.total?(S.total-S.remaining)/S.total:0; S.ghost.style.opacity=(0.15+0.85*done).toFixed(3); }
+const GHOST_START=0.05, GHOST_MAX=0.50;              // barely there at first; never past 50% until the win
+function setGhostOpacity(){
+  if(!S||!S.ghost) return;
+  if(S.won){ S.ghost.style.opacity="1"; return; }
+  const done=S.total?(S.total-S.remaining)/S.total:0;
+  S.ghost.style.opacity=(GHOST_START+(GHOST_MAX-GHOST_START)*done).toFixed(3);
+}
 function updateProgress(){ if(!S) return; el("bar").style.width=(S.total?(S.total-S.remaining)/S.total*100:0).toFixed(1)+"%"; }
 function updateButtons(){ if(!S) return; el("undoBtn").disabled=!S.history.length||S.won; el("hintBtn").disabled=!S.remaining||S.won; }
 
@@ -737,7 +748,7 @@ function undo(){ if(!S) return; if(!S.history.length||S.won||S.busy) return;
   S.remaining++; S.moves++; S.undos++; renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
 function reset(){ if(!S||S.busy||S.won) return;
   for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
-  S.remaining=S.total; S.history=[]; S.blocked=0; el("tryagain").classList.remove("show");
+  S.remaining=S.total; S.history=[]; S.blocked=0; forceShow(el("tryagain"), false);
   renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Fresh start — study the fish and plan your order."; }
 function hint(){ if(!S||S.won||S.busy) return; clearHints();
   const firable=S.pieces.filter(pc=>pc.alive&&headRayClear(pc)); if(!firable.length) return;
@@ -762,7 +773,13 @@ function win(){
   store.set("aa_progress", String(Math.max(Number(store.get("aa_progress")||0), S.level+1)));
   const bestStars=Math.max(Number(store.get("aa_stars_"+S.level)||0), earned);
   store.set("aa_stars_"+S.level, String(bestStars)); renderHeaderStars(bestStars);
-  if(S.ghost){ S.ghost.style.transition="opacity .8s ease"; S.ghost.style.opacity="1"; }
+  if(S.ghost){
+    S.ghost.style.transition="opacity .38s cubic-bezier(.2,.9,.3,1), transform .55s cubic-bezier(.2,1.3,.4,1), filter .45s ease";
+    S.ghost.style.opacity="1";                      // 50% -> 100% snap: the payoff
+    S.ghost.style.filter="saturate(1.08)";
+    S.ghost.style.transform="scale(1.045)";
+    setTimeout(()=>{ if(S&&S.ghost){ S.ghost.style.transform="scale(1)"; S.ghost.style.filter=""; } },420);
+  }
   else { for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv){ dv.classList.remove("faint"); dv.classList.add("lit"); } } }
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
   const last=S.level>=FISH.length-1;
@@ -786,7 +803,8 @@ function forceShow(node,on){
   if(!node) return;
   if(on){ document.body.appendChild(node);            // re-append so it always paints on top
     node.classList.add("show");
-    node.style.cssText+=";display:flex;opacity:1;visibility:visible;pointer-events:auto;z-index:9000;";
+    const disp = node.classList.contains("mini") || node.classList.contains("overlay") ? "grid" : "flex";
+    node.style.cssText+=";display:"+disp+";opacity:1;visibility:visible;pointer-events:auto;z-index:9000;";
   } else { node.classList.remove("show");
     node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
 }
@@ -895,8 +913,8 @@ function on(id,fn){ const n=el(id); if(!n){ console.warn("missing #"+id); return
 on("undoBtn",undo); on("resetBtn",reset); on("hintBtn",hint);
 on("catchBtn",openGuide); on("guideClose",closeGuide); on("fsBtn",toggleFS);
 on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); el("about").classList.remove("show"); });
-on("taQuit",()=>{ guard(); el("tryagain").classList.remove("show"); reset(); el("splash").classList.remove("hide"); });
-on("taReset",()=>{ guard(); el("tryagain").classList.remove("show"); reset(); });
+on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); });
+on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
 on("playBtn",()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
 
 /* ---------- ambient underwater scene ---------- */
