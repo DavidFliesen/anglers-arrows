@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.18.0
+# Angler's Arrows — v1.19.0
 
-**Version 1.18.0** · ARTEZIQ · updated 2026-08-14
+**Version 1.19.0** · ARTEZIQ · updated 2026-08-15
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.19.0** — "Your Catch" now force-opens with inline styles and is re-appended to the top of the
+  document, so no CSS/stacking condition can hide it. Arrows restyled to match classic arrow-maze
+  games: thin uniform lines, rounded corners at every bend, slim sharp tips, and arrowheads always
+  inline with their line.
 - **1.18.0** — Fixed "Your Catch" freezing the app: opening it decoded eight full-size (1536x1024)
   plates at once (~50 MB), exhausting memory on iPad. Artwork is now optimized (22.8 MB → 6.2 MB),
   the Field Guide and background fish use small thumbnails, and only one full-size image is ever

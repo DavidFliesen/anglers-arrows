@@ -87,9 +87,9 @@
 
   .arrows{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:3;transition:opacity .4s ease}
   .arrow{pointer-events:none}
-  .arrow .hit{fill:none;stroke:transparent;stroke-width:.92;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:pointer}
-  .arrow .shaft{fill:none;stroke:var(--ink);stroke-width:.46;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-  .arrow .head{fill:var(--ink);pointer-events:auto;cursor:pointer}
+  .arrow .hit{fill:none;stroke:transparent;stroke-width:.85;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:pointer}
+  .arrow .shaft{fill:none;stroke:var(--ink);stroke-width:.26;stroke-linecap:butt;stroke-linejoin:round;pointer-events:none}
+  .arrow .head{fill:var(--ink);stroke:var(--ink);stroke-width:.02;stroke-linejoin:round;pointer-events:auto;cursor:pointer}
   .arrow.hint .shaft{stroke:var(--aqua-lo)} .arrow.hint .head{fill:var(--aqua-lo)}
   .arrow.shake{animation:shakeA .4s ease}
   @keyframes shakeA{10%,90%{transform:translateX(-.1px)}30%,50%,70%{transform:translateX(-.28px)}20%,40%,60%,80%{transform:translateX(.28px)}}
@@ -272,7 +272,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.18.0";
+const APP_VERSION="1.19.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -560,7 +560,9 @@ function generatePieces(cellsSet,rows,cols){
           const body=[[r,c]]; const bset=new Set([r+","+c]); let cur=[r,c];
           for(let step=0; step<MAXLEN-1; step++){
             const nbrs=[], ck=cur[0]+","+cur[1];
-            for(const nd of DK){ if(nd===d && step===0) continue;
+            const OPP={up:"down",down:"up",left:"right",right:"left"};
+            for(const nd of DK){
+              if(step===0 && nd!==OPP[d]) continue;   // head must be inline with its line (reference look)
               const [ndr,ndc]=DIRS[nd]; const nr=cur[0]+ndr, nc=cur[1]+ndc, nk=nr+","+nc;
               if(!cellsSet.has(nk)||occ.has(nk)||bset.has(nk)||forbidden.has(nk)) continue;
               let selfTouch=false;
@@ -637,17 +639,37 @@ function renderBoard(animateIn){
   board.appendChild(svg); S.svg=svg;
   if(animateIn){ svg.style.opacity="0"; requestAnimationFrame(()=>{ svg.style.opacity="1"; }); }
 }
+// builds a polyline with rounded corners at each bend (reference-style arrow maze)
+function roundedPath(pts, r){
+  if(pts.length<2) return "M "+pts.map(p=>p[0]+" "+p[1]).join(" L ");
+  let d=`M ${pts[0][0].toFixed(3)} ${pts[0][1].toFixed(3)}`;
+  for(let i=1;i<pts.length-1;i++){
+    const p=pts[i-1], c=pts[i], n=pts[i+1];
+    const v1x=c[0]-p[0], v1y=c[1]-p[1], v2x=n[0]-c[0], v2y=n[1]-c[1];
+    const straight = (v1x===0)===(v2x===0) && (v1y===0)===(v2y===0);
+    if(straight){ continue; }                       // no corner: let the line run through
+    const l1=Math.hypot(v1x,v1y), l2=Math.hypot(v2x,v2y);
+    const rr=Math.min(r, l1/2, l2/2);
+    const ax=c[0]-v1x/l1*rr, ay=c[1]-v1y/l1*rr;     // corner entry
+    const bx=c[0]+v2x/l2*rr, by=c[1]+v2y/l2*rr;     // corner exit
+    d+=` L ${ax.toFixed(3)} ${ay.toFixed(3)} Q ${c[0].toFixed(3)} ${c[1].toFixed(3)} ${bx.toFixed(3)} ${by.toFixed(3)}`;
+  }
+  const e=pts[pts.length-1];
+  d+=` L ${e[0].toFixed(3)} ${e[1].toFixed(3)}`;
+  return d;
+}
 function makeArrowEl(pc,NS){
   const g=document.createElementNS(NS,"g"); g.setAttribute("class","arrow"); g.dataset.id=pc.id;
   g.setAttribute("aria-label",`Arrow pointing ${pc.dir}`);
-  const pts=pc.cells.map(([r,c])=>`${(c+0.5).toFixed(3)} ${(r+0.5).toFixed(3)}`);
-  const dd="M "+pts.join(" L ");
+  const dd=roundedPath(pc.cells.map(([r,c])=>[c+0.5,r+0.5]), 0.26);
   const hit=document.createElementNS(NS,"path"); hit.setAttribute("class","hit"); hit.setAttribute("d",dd); g.appendChild(hit);
   const shaft=document.createElementNS(NS,"path"); shaft.setAttribute("class","shaft"); shaft.setAttribute("d",dd); g.appendChild(shaft);
   const [hr,hc]=pc.head, [dr,dc]=DIRS[pc.dir]; const hx=hc+0.5, hy=hr+0.5, px=-dr, py=dc;
-  const tip=`${(hx+dc*0.70).toFixed(3)} ${(hy+dr*0.70).toFixed(3)}`;
-  const b1=`${(hx+px*0.40-dc*0.05).toFixed(3)} ${(hy+py*0.40-dr*0.05).toFixed(3)}`;
-  const b2=`${(hx-px*0.40-dc*0.05).toFixed(3)} ${(hy-py*0.40-dr*0.05).toFixed(3)}`;
+  // slim, sharp tip like a drafted arrowhead: long and narrow
+  const TIPL=0.62, TIPW=0.27, BACK=0.10;
+  const tip=`${(hx+dc*TIPL).toFixed(3)} ${(hy+dr*TIPL).toFixed(3)}`;
+  const b1=`${(hx+px*TIPW-dc*BACK).toFixed(3)} ${(hy+py*TIPW-dr*BACK).toFixed(3)}`;
+  const b2=`${(hx-px*TIPW-dc*BACK).toFixed(3)} ${(hy-py*TIPW-dr*BACK).toFixed(3)}`;
   const head=document.createElementNS(NS,"path"); head.setAttribute("class","head"); head.setAttribute("d",`M ${tip} L ${b1} L ${b2} Z`); g.appendChild(head);
   g.addEventListener("click",()=>onTap(pc,g));
   return g;
@@ -682,8 +704,7 @@ function flyOff(pc,g){
   const tailFirst=pc.cells.slice().reverse().map(([r,c])=>[c+0.5,r+0.5]);
   let bodyLen=0; for(let i=1;i<tailFirst.length;i++) bodyLen+=Math.hypot(tailFirst[i][0]-tailFirst[i-1][0], tailFirst[i][1]-tailFirst[i-1][1]);
   const hp=tailFirst[tailFirst.length-1], D=Math.max(S.cols,S.rows)*1.6;
-  const full="M "+tailFirst.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join(" L ")+
-             ` L ${(hp[0]+dc*D).toFixed(2)} ${(hp[1]+dr*D).toFixed(2)}`;
+  const full=roundedPath(tailFirst.concat([[hp[0]+dc*D, hp[1]+dr*D]]), 0.26);
   [shaft,hit].forEach(n=>{ if(n){ n.setAttribute("d",full); n.style.strokeDasharray=`${bodyLen.toFixed(2)} ${(bodyLen+D+4).toFixed(2)}`; n.style.strokeDashoffset="0"; } });
   const dur=620+Math.min(260,bodyLen*26);
   const t0=(typeof performance!=="undefined"?performance.now():Date.now());
@@ -755,12 +776,22 @@ function win(){
 function hideReveal(){ guard(); el("reveal").classList.remove("show"); }
 
 /* ---------- field guide ---------- */
+function forceShow(node,on){
+  if(!node) return;
+  if(on){ document.body.appendChild(node);            // re-append so it always paints on top
+    node.classList.add("show");
+    node.style.cssText+=";display:flex;opacity:1;visibility:visible;pointer-events:auto;z-index:9000;";
+  } else { node.classList.remove("show");
+    node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
+}
 function openGuide(){
   guard();
-  el("reveal").classList.remove("show"); el("detail").classList.remove("show"); el("about").classList.remove("show");
-  el("guide").classList.add("show");                    // show FIRST so a render hiccup can't hide the panel
-  try{ renderGuideList(); }catch(err){ console.error(err);
-    el("guideScroll").innerHTML='<p style="color:#a9c0e0;padding:12px">Could not build the list. Tap \u00d7 to return.</p>'; }
+  ["reveal","detail","about"].forEach(id=>{ const n=el(id); if(n){ n.classList.remove("show"); n.style.opacity=""; n.style.visibility=""; } });
+  forceShow(el("guide"), true);                        // open FIRST, unconditionally
+  try{ renderGuideList(); }
+  catch(err){ console.error(err);
+    el("guideScroll").innerHTML='<p style="color:#a9c0e0;padding:14px">Could not build the list \u2014 tap \u00d7 to return.</p>';
+    toast("Guide render error: "+(err&&err.message||err)); }
 }
 function renderGuideList(){
   const caught=Number(store.get("aa_progress")||0); const scroll=el("guideScroll"); scroll.innerHTML="";
@@ -784,7 +815,7 @@ function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("gui
   scroll.scrollTop=0;
   on("gback",()=>{ guard(); renderGuideList(); });
 }
-function closeGuide(){ guard(); el("guide").classList.remove("show"); }
+function closeGuide(){ guard(); forceShow(el("guide"), false); }
 function openAbout(){
   guard();
   const box=el("aboutCredits"); box.textContent="Loading\u2026";
