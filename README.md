@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.22.0
+# Angler's Arrows — v1.23.0
 
-**Version 1.22.0** · ARTEZIQ · updated 2026-08-15
+**Version 1.23.0** · ARTEZIQ · updated 2026-08-15
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.23.0** — Ambient scene brought up: environments 30%→46% opacity and brighter, drifting fish
+  0.16–0.32→0.30–0.46, bubbles 12→17 and brighter. Drifting fish now sway and "breathe"
+  (gentle tail rotation + slow swell), each at its own pace, with the direction-flip folded into the
+  animation so no fish ever swims backwards.
 - **1.22.0** — Tapping a blocked arrow now shows a running warning under the board:
   "Wrong choice N of 6 this game. Choose wisely." in amber with a shake, clearing on the next
   successful move, reset, or new level.

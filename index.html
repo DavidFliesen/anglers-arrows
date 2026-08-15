@@ -32,12 +32,19 @@
   .scene{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
   .scene .env{position:absolute;left:50%;bottom:-2vh;transform:translateX(-50%);
     width:min(150vw,1500px);max-height:52vh;object-fit:contain;object-position:bottom;
-    opacity:0;filter:saturate(.6) brightness(.5) blur(.6px);transition:opacity 2s ease}
-  .scene .env.in{opacity:.3}
+    opacity:0;filter:saturate(.78) brightness(.66) blur(.4px);transition:opacity 2s ease}
+  .scene .env.in{opacity:.46}
   .scene .swimmer{position:absolute;will-change:transform;opacity:0;
-    filter:saturate(.72) brightness(.82) drop-shadow(0 6px 14px rgba(0,0,0,.35))}
-  .scene .swimmer img{display:block;width:100%;height:auto}
-  .scene .swimmer.flip img{transform:scaleX(-1)}   /* flip so fish always face the way they swim */
+    filter:saturate(.9) brightness(.95) drop-shadow(0 6px 16px rgba(0,0,0,.4))}
+  .scene .swimmer img{display:block;width:100%;height:auto;transform-origin:52% 50%;
+    animation:fish-sway var(--sway,4.6s) ease-in-out infinite;animation-delay:var(--swaydelay,0s)}
+  .scene .swimmer.flip{--flip:-1}                  /* face the way it swims */
+  /* gentle tail sway + a slow "breathing" swell, applied on top of the flip */
+  @keyframes fish-sway{
+    0%,100%{transform:scaleX(var(--flip,1)) rotate(-1.5deg) scaleY(.99) skewX(0.6deg)}
+    35%    {transform:scaleX(var(--flip,1)) rotate(0.4deg) scaleY(1.02) skewX(-0.4deg)}
+    70%    {transform:scaleX(var(--flip,1)) rotate(1.6deg) scaleY(1.005) skewX(-0.7deg)}
+  }
   @keyframes swim-across{
     0%{transform:translate3d(var(--x0),0,0) translateY(0);opacity:0}
     8%{opacity:var(--op,.5)}
@@ -47,9 +54,9 @@
   }
   .bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
   .bubble{position:absolute;bottom:-40px;border-radius:50%;
-    background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.4), rgba(127,227,245,.06) 60%, transparent 70%);
+    background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.55), rgba(127,227,245,.12) 60%, transparent 72%);
     animation:rise linear infinite;opacity:0}
-  @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.4}80%{opacity:.3}100%{transform:translateY(-108vh) translateX(var(--drift,0));opacity:0}}
+  @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.62}80%{opacity:.5}100%{transform:translateY(-108vh) translateX(var(--drift,0));opacity:0}}
 
   .wrap{position:relative;z-index:1;max-width:min(94vw,700px);margin:0 auto;
     padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 18px);
@@ -212,7 +219,7 @@
   body.immersive .board-shell{margin-top:8px}
 
   @media (max-width:360px){.brand h1{font-size:18px}.brand .mark{width:46px;height:46px;flex-basis:46px}.panel h2{font-size:25px}.marks li{font-size:14.5px}}
-  @media (prefers-reduced-motion: reduce){.scene .swimmer{display:none}*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
+  @media (prefers-reduced-motion: reduce){.scene .swimmer{display:none}.scene .swimmer img{animation:none}*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
 </style>
 </head>
 <body>
@@ -279,7 +286,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.22.0";
+const APP_VERSION="1.23.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -956,7 +963,9 @@ function spawnSwimmer(){
     d.style.setProperty("--x0", toRight ? "-30vw" : "115vw");
     d.style.setProperty("--x1", toRight ? "115vw" : "-30vw");
     d.style.setProperty("--bob", (-6-Math.random()*14).toFixed(0)+"px");
-    d.style.setProperty("--op", (0.16+Math.random()*0.16).toFixed(2));
+    d.style.setProperty("--op", (0.30+Math.random()*0.16).toFixed(2));
+    d.style.setProperty("--sway", (3.6+Math.random()*2.6).toFixed(2)+"s");   // each fish breathes at its own pace
+    d.style.setProperty("--swaydelay", (-Math.random()*4).toFixed(2)+"s");
     const faces=FACES[fish.slug]||"right";
     if((toRight && faces==="left") || (!toRight && faces==="right")) d.classList.add("flip");
     const dur=42+Math.random()*38;                         // slow, calm drift
@@ -973,7 +982,7 @@ function startAmbient(){
 }
 
 /* bubbles */
-(function(){const box=el("bubbles");for(let i=0;i<12;i++){const b=document.createElement("div");b.className="bubble";
+(function(){const box=el("bubbles");for(let i=0;i<17;i++){const b=document.createElement("div");b.className="bubble";
   const s=4+Math.random()*13;b.style.width=s+"px";b.style.height=s+"px";b.style.left=(Math.random()*100)+"%";
   b.style.setProperty("--drift",(Math.random()*40-20)+"px");b.style.animationDuration=(10+Math.random()*12)+"s";
   b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
