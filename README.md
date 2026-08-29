@@ -1,11 +1,17 @@
-# Angler's Arrows — v1.25.0
+# Angler's Arrows — v1.26.0
 
-**Version 1.25.0** · ARTEZIQ · updated 2026-08-15
+**Version 1.26.0** · ARTEZIQ · updated 2026-08-29
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.26.0** — Roster expanded to **15 species** using the ported Angler's Jigsaw artwork, with the
+  canonical naming convention adopted: `assets/fish/NN_slug_large.png` (transparent — puzzle shape,
+  reveal, guide), `assets/puzzles/NN_slug_puzzle.jpg` (habitat backdrop behind the board),
+  `assets/thumbs/NN_slug_thumb.png` (list rows + drifting background fish), `assets/themes/` for
+  environments. Habitat scene now sits behind each board and brightens as arrows clear. Assets
+  optimized 59 MB → 13.6 MB.
 - **1.25.0** — Fixed being stranded after opening **Fish Caught** from the level-complete card:
   opening the list hid the win card and nothing restored it, leaving a finished level with no way to
   advance. Closing the list now brings the win card back (Replay / Fish Caught / Next fish), with a
