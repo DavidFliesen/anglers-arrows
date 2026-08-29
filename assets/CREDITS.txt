@@ -1,0 +1,35 @@
+Angler's Arrows — image credits
+===============================
+Shown on each species page (Fish Caught → tap a fish).
+Keys match the canonical asset ids in assets/fish, assets/puzzles and assets/thumbs.
+
+01_largemouth_bass.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+02_smallmouth_bass.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+03_spotted_bass.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+04_striped_bass.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+05_white_bass.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+06_bluegill.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+07_black_crappie.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+08_white_crappie.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+09_yellow_perch.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+10_walleye.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+11_sauger.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+12_northern_pike.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+13_muskellunge.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+14_chain_pickerel.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
+15_bowfin.png
+  by Original artwork for Angler's Arrows / Angler's Jigsaw (ARTEZIQ) — All rights reserved
