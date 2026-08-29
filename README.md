@@ -1,11 +1,16 @@
-# Angler's Arrows — v1.26.0
+# Angler's Arrows — v1.27.0
 
-**Version 1.26.0** · ARTEZIQ · updated 2026-08-29
+**Version 1.27.0** · ARTEZIQ · updated 2026-08-29
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.27.0** — Fixed `TypeError: undefined is not an object (evaluating 's.a')` after finishing a
+  level. The 15-species roster dropped the old vector `spec` field, but three call sites still asked
+  the retired vector renderer to draw it — which also silently forced every board to fall back to a
+  generic ellipse instead of the fish shape. The vector renderer is now removed entirely: puzzle
+  masks, reveals and guide art all come from the transparent cutouts.
 - **1.26.0** — Roster expanded to **15 species** using the ported Angler's Jigsaw artwork, with the
   canonical naming convention adopted: `assets/fish/NN_slug_large.png` (transparent — puzzle shape,
   reveal, guide), `assets/puzzles/NN_slug_puzzle.jpg` (habitat backdrop behind the board),

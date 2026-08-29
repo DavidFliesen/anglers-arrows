@@ -1,4 +1,4 @@
-# Angler's Arrows v1.26.0 — deployment / file placement
+# Angler's Arrows v1.27.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,8 +7,8 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.26.0)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.26.0)
+├── index.html                  ← REPLACE (v1.27.0)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.27.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -49,5 +49,5 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.26.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.27.0**.
 3. Fish Caught should list 15 species.
