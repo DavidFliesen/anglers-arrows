@@ -1,11 +1,19 @@
-# Angler's Arrows — v1.27.0
+# Angler's Arrows — v1.29.0
 
-**Version 1.27.0** · ARTEZIQ · updated 2026-08-29
+**Version 1.29.0** · ARTEZIQ · updated 2026-08-30
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.29.0** — Fixed the About ("i") screen opening *behind* Fish Caught (z-index 92 vs 95); overlays
+  now use an explicit layer map. Larger, higher-contrast text on the About and opening screens.
+  Added **Reset All Fish** at the bottom of Fish Caught (two-tap confirm) which clears every catch and
+  restarts at Level 1.
+- **1.28.0** — Fixed Replay / Next fish doing nothing after visiting Fish Caught. Overlays were
+  *opened* with inline styles (`forceShow`) but *closed* by removing a CSS class, so the win card
+  stayed pinned at z-index 9000 over the new board. Every overlay now opens and closes the same way.
+  Async handler rejections are now surfaced as an error toast instead of failing silently.
 - **1.27.0** — Fixed `TypeError: undefined is not an object (evaluating 's.a')` after finishing a
   level. The 15-species roster dropped the old vector `spec` field, but three call sites still asked
   the retired vector renderer to draw it — which also silently forced every board to fall back to a

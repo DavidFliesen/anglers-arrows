@@ -134,8 +134,8 @@
   .overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;
     background:linear-gradient(180deg,#0a2a55,#00102e 85%);opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s}
   .overlay.show{opacity:1;visibility:visible}
-  #detail{z-index:90}
-  #about{z-index:92}
+  #detail{z-index:9600}
+  #about{z-index:9700}
   body.tapguard .guide-scroll{pointer-events:none !important}
   body.tapguard .board .arrow .hit,body.tapguard .board .arrow .head{pointer-events:none !important}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
@@ -179,7 +179,7 @@
   .mini .row{display:flex;gap:10px}
 
   /* field guide */
-  .guide-panel{position:fixed;inset:0;z-index:95;background:linear-gradient(180deg,#0b2c5c,#00102e 80%);opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s;display:flex;flex-direction:column}
+  .guide-panel{position:fixed;inset:0;z-index:9400;background:linear-gradient(180deg,#0b2c5c,#00102e 80%);opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s;display:flex;flex-direction:column}
   .guide-panel.show{opacity:1;visibility:visible}
   .guide-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;max-width:560px;margin:0 auto;width:100%}
   .guide-head .mark{width:56px;height:56px;border-radius:50%;flex:0 0 56px;box-shadow:0 3px 12px rgba(0,0,0,.5)}
@@ -203,6 +203,11 @@
   .gcard .info .tap{font-size:11px;color:var(--aqua-lo);font-weight:800;margin-top:6px;letter-spacing:.04em}
   .gback{display:inline-flex;align-items:center;background:rgba(5,22,29,.4);border:1px solid rgba(169,192,224,.24);color:var(--foam);font-family:var(--font);font-weight:800;font-size:14px;padding:11px 16px;border-radius:12px;cursor:pointer;margin:2px 0 16px}
   .gback:active{transform:translateY(1px)}
+  .resetwrap{margin:20px 0 10px;text-align:center}
+  .resetall{width:100%;max-width:320px;background:rgba(255,90,70,.12);border:1px solid rgba(255,120,100,.45);
+    color:#ffb9ab;font-weight:800;font-size:15px;padding:15px 12px;border-radius:15px;cursor:pointer}
+  .resetall.armed{background:linear-gradient(160deg,#ff6b4a,#e03b1c);color:#fff;border-color:transparent}
+  .resetnote{font-size:13px;color:var(--mist);margin:9px auto 0;max-width:320px;line-height:1.45}
   .gdetail{display:flex;flex-direction:column;align-items:center;max-width:430px;margin:0 auto}
   .gdetail .fishwrap{width:min(72vw,300px);margin-bottom:-4px;z-index:2}
   .gdetail .panel{width:100%}
@@ -216,9 +221,9 @@
 
   .splash{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:28px;background:radial-gradient(90% 70% at 50% 36%, #123a72, #00102e 78%);transition:opacity .55s ease, visibility .55s}
   .splash.hide{opacity:0;visibility:hidden}
-  .splash .inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:360px}
+  .splash .inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:420px}
   .splash img{width:min(70vw,270px);height:auto;filter:drop-shadow(0 20px 32px rgba(0,0,0,.55));animation:sway 5s ease-in-out infinite}
-  .splash p{color:var(--mist);font-size:15px;line-height:1.55;margin:22px 0 0}
+  .splash p{color:#e2ecfb;font-size:18px;line-height:1.65;margin:22px 0 0;text-shadow:0 1px 6px rgba(0,0,0,.5);max-width:34ch}
   .splash .play{margin-top:26px;max-width:240px}
 
   /* immersive (fallback fullscreen for iOS Safari) */
@@ -269,9 +274,9 @@
 <div class="overlay" id="detail" role="dialog" aria-modal="true" aria-label="Species detail"><div class="card" id="detailCard"></div></div>
 <div class="overlay" id="about" role="dialog" aria-modal="true" aria-label="About this app"><div class="card"><div class="panel" style="text-align:left">
   <div class="caught" style="text-align:center">About</div>
-  <h2 style="text-align:center;font-size:24px">Angler's Arrows</h2>
-  <p class="fact" style="margin-top:12px">Clear the arrows to reveal each species, then learn to know it by its features — built to help anglers recognize the fish they catch.</p>
-  <p class="fact" style="margin-top:10px">Each species page lists the credit and licence for its own artwork. Public-domain images need no attribution; any CC-BY artwork is credited there.</p>
+  <h2 style="text-align:center;font-size:28px">Angler’s Arrows</h2>
+  <p class="fact" style="margin-top:14px;font-size:17px;line-height:1.6;color:#e8f1ff">Clear the arrows to reveal each species, then learn to know it by its features — built to help anglers recognize the fish they catch.</p>
+  <p class="fact" style="margin-top:12px;font-size:16px;line-height:1.6;color:#dbe7fb">Each species page lists the credit and licence for its own artwork. Public-domain images need no attribution; any CC-BY artwork is credited there.</p>
   <div class="cta"><button class="btn primary" id="aboutClose">Close</button></div>
 </div></div>
 
@@ -293,7 +298,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.27.0";
+const APP_VERSION="1.29.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -303,7 +308,6 @@ const store = (() => {
   } catch { return { get:(k)=>mem[k]??null, set:(k,v)=>{mem[k]=v} }; }
 })();
 let uid=0; const P=n=>+n.toFixed(2);
-function lerp(c1,c2,t){const ex=h=>{h=h.replace('#','');return h.length===3?h.split('').map(x=>x+x).join(''):h;};const p=s=>parseInt(s,16);const A=ex(c1),B=ex(c2);const a=[p(A.slice(0,2)),p(A.slice(2,4)),p(A.slice(4,6))],b=[p(B.slice(0,2)),p(B.slice(2,4)),p(B.slice(4,6))];return "#"+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,"0")).join("");}
 
 /* ---------- species: catchable fish, common ones first ---------- */
 const FISH = [
@@ -701,14 +705,14 @@ function win(){
       <div class="earned">${starsSVG(earned)}</div><div class="caught">Species identified</div>
       <h2>${fish.name}</h2><p class="sci">${fish.sci}</p>${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta">${cta}</div></div>`;
-    guard(); el("reveal").classList.add("show"); mountFish(el("revealFish"),S.level);
+    guard(); forceShow(el("reveal"), true); mountFish(el("revealFish"),S.level);
     on("caughtBtn",openGuide);
     if(last) on("againBtn",()=>startLevel(0));
     else{ on("nextBtn",()=>startLevel(S.level+1)); on("replayBtn",()=>startLevel(S.level)); }
   };
   if(S.ghost) setTimeout(show, 820); else show();
 }
-function hideReveal(){ guard(); el("reveal").classList.remove("show"); }
+function hideReveal(){ guard(); forceShow(el("reveal"), false); }
 
 /* ---------- field guide ---------- */
 function forceShow(node,on){
@@ -716,7 +720,8 @@ function forceShow(node,on){
   if(on){ document.body.appendChild(node);            // re-append so it always paints on top
     node.classList.add("show");
     const disp = node.classList.contains("mini") || node.classList.contains("overlay") ? "grid" : "flex";
-    node.style.cssText+=";display:"+disp+";opacity:1;visibility:visible;pointer-events:auto;z-index:9000;";
+    const zmap={about:9700,detail:9600,tryagain:9500,guide:9400,reveal:9300};
+    node.style.cssText+=";display:"+disp+";opacity:1;visibility:visible;pointer-events:auto;z-index:"+(zmap[node.id]||9000)+";";
   } else { node.classList.remove("show");
     node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
 }
@@ -725,7 +730,7 @@ function revealIsOpen(){ const n=el("reveal"); return !!n && (n.classList.contai
 function openGuide(){
   guard();
   revealWasOpen = revealIsOpen();                      // came from the level-complete card? remember it
-  ["reveal","detail","about"].forEach(id=>{ const n=el(id); if(n){ n.classList.remove("show"); n.style.opacity=""; n.style.visibility=""; } });
+  ["reveal","detail","about"].forEach(id=>{ forceShow(el(id), false); });
   forceShow(el("guide"), true);                        // open FIRST, unconditionally
   try{ renderGuideList(); }
   catch(err){ console.error(err);
@@ -741,6 +746,21 @@ function renderGuideList(){
     } else { c.innerHTML=`<div class="thumb">?</div><div class="info"><h3>Not yet caught</h3>
         <p>Clear level ${String(i+1).padStart(2,"0")} to add this species.</p></div>`; }
     scroll.appendChild(c); });
+  const rst=document.createElement("div"); rst.className="resetwrap";
+  rst.innerHTML='<button class="btn resetall" id="resetAll" type="button">Reset All Fish</button>'+
+                '<p class="resetnote" id="resetNote">Clears every catch and starts again at Level 1.</p>';
+  scroll.appendChild(rst);
+  let armed=false;
+  on("resetAll",()=>{
+    const b=el("resetAll"), n=el("resetNote");
+    if(!armed){ armed=true; b.textContent="Tap again to confirm"; b.classList.add("armed");
+      n.textContent="This erases every catch and all stars.";
+      setTimeout(()=>{ const bb=el("resetAll"), nn=el("resetNote");
+        if(armed&&bb){ armed=false; bb.textContent="Reset All Fish"; bb.classList.remove("armed");
+          if(nn) nn.textContent="Clears every catch and starts again at Level 1."; } },4000);
+      return; }
+    resetAllProgress();
+  });
   const thumbs=[...scroll.querySelectorAll(".thumb[data-i]")];
   thumbs.forEach((t,n)=>setTimeout(()=>{ try{ mountFish(t,+t.dataset.i,true); }catch(e){} }, n*60));
   scroll.scrollTop=0;
@@ -758,6 +778,14 @@ function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("gui
   on("gback",()=>{ guard(); renderGuideList(); });
   on("gback2",()=>{ guard(); renderGuideList(); });
 }
+function resetAllProgress(){
+  try{ store.set("aa_progress","0");
+    for(let i=0;i<FISH.length;i++) store.set("aa_stars_"+i,"0");
+  }catch(e){}
+  revealWasOpen=false;
+  forceShow(el("guide"), false); forceShow(el("reveal"), false);
+  startLevel(0);
+}
 function closeGuide(){
   guard(); forceShow(el("guide"), false);
   // returning from Fish Caught must not strand a finished level with no way forward
@@ -768,7 +796,7 @@ function reopenReveal(){
   if(!card || !card.querySelector(".cta")) return;      // nothing to restore
   forceShow(el("reveal"), true);
 }
-function openAbout(){ guard(); el("about").classList.add("show"); }
+function openAbout(){ guard(); forceShow(el("about"), true); }
 
 /* ---------- per-species image credits (parsed from assets/CREDITS.txt) ---------- */
 let creditsMap=null, creditsPromise=null;
@@ -808,7 +836,7 @@ function openDetail(i){ guard(); const fish=FISH[i];
       <div class="caught">Field guide</div><h2>${fish.name}</h2><p class="sci">${fish.sci}</p>
       ${marksBlock(fish)}<p class="fact">${fish.fact}</p>
       <div class="cta"><button class="btn primary" id="detailClose">Close</button></div></div>`;
-  el("detail").classList.add("show"); mountFish(el("detailFish"),i); on("detailClose",()=>{ guard(); el("detail").classList.remove("show"); });
+  forceShow(el("detail"), true); mountFish(el("detailFish"),i); on("detailClose",()=>{ guard(); forceShow(el("detail"), false); });
 }
 
 /* ---------- fullscreen (real where supported, immersive fallback for iOS) ---------- */
@@ -832,11 +860,15 @@ window.addEventListener("error",(e)=>{ unguard(); toast("Error: "+(e.message||"u
 window.addEventListener("unhandledrejection",()=>{ unguard(); });
 // every handler is wrapped: one failure can never deaden the rest of the UI
 function on(id,fn){ const n=el(id); if(!n){ console.warn("missing #"+id); return; }
-  n.onclick=(ev)=>{ try{ fn(ev); }catch(err){ unguard(); toast("Error: "+(err&&err.message||err)); console.error(err); } }; }
+  n.onclick=(ev)=>{ try{
+      const r=fn(ev);
+      // async handlers (startLevel) reject asynchronously - catch those too
+      if(r && typeof r.catch==="function") r.catch(err=>{ unguard(); toast("Error: "+(err&&err.message||err)); console.error(err); });
+    }catch(err){ unguard(); toast("Error: "+(err&&err.message||err)); console.error(err); } }; }
 
 on("undoBtn",undo); on("resetBtn",reset); on("hintBtn",hint);
 on("catchBtn",openGuide); on("guideClose",closeGuide); on("fsBtn",toggleFS);
-on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); el("about").classList.remove("show"); });
+on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); forceShow(el("about"), false); });
 on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); });
 on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
 on("playBtn",()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
