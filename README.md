@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.31.0
+# Angler's Arrows — v1.32.0
 
-**Version 1.31.0** · ARTEZIQ · updated 2026-08-31
+**Version 1.32.0** · ARTEZIQ · updated 2026-08-31
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.32.0** — Stopped Safari's "It looks like you are typing while in full screen" prompt appearing
+  when closing Fish Caught. Two things triggered it: a `keydown` listener used to unlock audio, and
+  the Settings range sliders taking keyboard focus. Audio now unlocks on touch alone, the sliders are
+  out of the focus path, and focus is cleared whenever a panel opens or closes.
 - **1.31.0** — Menu music now plays on the splash screen (it was being overwritten by the gameplay
   bed at boot, and unlocked too late). Audio now unlocks on the player's first touch anywhere, and
   the menu bed hands over to the gameplay bed on "Start fishing". New **Settings** panel behind a

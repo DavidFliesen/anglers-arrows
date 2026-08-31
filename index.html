@@ -304,11 +304,11 @@
   <h2 style="text-align:center;font-size:26px;margin-bottom:18px">Sound &amp; Display</h2>
   <div class="setrow">
     <label for="musicVol">Music level <span class="val" id="musicVolVal">55%</span></label>
-    <input type="range" id="musicVol" min="0" max="100" step="5" value="55" />
+    <input type="range" id="musicVol" min="0" max="100" step="5" value="55" tabindex="-1" inputmode="none" />
   </div>
   <div class="setrow">
     <label for="sfxVol">Sound level <span class="val" id="sfxVolVal">50%</span></label>
-    <input type="range" id="sfxVol" min="0" max="100" step="5" value="50" />
+    <input type="range" id="sfxVol" min="0" max="100" step="5" value="50" tabindex="-1" inputmode="none" />
   </div>
   <div class="switchrow">
     <div class="txt"><h4>Fullscreen lock</h4><p>Go fullscreen on launch and stay there between levels.</p></div>
@@ -342,7 +342,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.31.0";
+const APP_VERSION="1.32.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -763,8 +763,11 @@ function win(){
 function hideReveal(){ guard(); forceShow(el("reveal"), false); }
 
 /* ---------- field guide ---------- */
+function blurActive(){ try{ const a=document.activeElement;
+  if(a && a!==document.body && typeof a.blur==="function") a.blur(); }catch(e){} }
 function forceShow(node,on){
   if(!node) return;
+  blurActive();                                   // stops Safari's "typing in full screen" prompt
   if(on){ document.body.appendChild(node);            // re-append so it always paints on top
     node.classList.add("show");
     const disp = node.classList.contains("mini") || node.classList.contains("overlay") ? "grid" : "flex";
@@ -863,7 +866,9 @@ function initSettings(){
     el("musicVolVal").textContent=v+"%"; paintRange(mv); AUDIO.setMusicVol(v/100); updateSndIcon(); });
   if(sv){ sv.addEventListener("input",()=>{ AUDIO.unlock(); const v=+sv.value;
       el("sfxVolVal").textContent=v+"%"; paintRange(sv); AUDIO.setSfxVol(v/100); updateSndIcon(); });
-    sv.addEventListener("change",()=>AUDIO.preview()); }          // hear the level you picked
+    sv.addEventListener("change",()=>{ AUDIO.preview(); blurActive(); }); }   // hear the level you picked
+  if(mv) mv.addEventListener("change",blurActive);
+  [mv,sv].forEach(r=>{ if(r) r.addEventListener("pointerup",()=>setTimeout(blurActive,0)); });
   if(lk) lk.onclick=()=>{ const now=!fsLockOn(); store.set("aa_fslock", now?"1":"0");
     lk.classList.toggle("on",now); lk.setAttribute("aria-checked",now?"true":"false");
     AUDIO.sfx("tap"); if(now) applyFSLock(); };
@@ -1103,9 +1108,9 @@ try{ document.getElementById("brandbar").innerHTML=`<b>${APP_BRAND}</b><span cla
 // the splash is the first thing on screen, so the menu bed owns the audio until "Start fishing".
 // iOS keeps it silent until the first touch, which the listener below supplies.
 if(splashUp()) AUDIO.music("menu");
-["pointerdown","touchstart","keydown"].forEach(ev=>{
+["pointerdown","touchstart"].forEach(ev=>{
   document.addEventListener(ev, function once(){
-    ["pointerdown","touchstart","keydown"].forEach(e2=>document.removeEventListener(e2, once, true));
+    ["pointerdown","touchstart"].forEach(e2=>document.removeEventListener(e2, once, true));
     AUDIO.unlock();
   }, true);
 });
