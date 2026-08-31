@@ -67,6 +67,8 @@
     background:rgba(5,22,29,.45);color:var(--foam);display:grid;place-items:center;cursor:pointer}
   .fs-toggle:active{transform:translateY(1px)}
   .fs-toggle svg{width:30px;height:30px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .snd-toggle{top:calc(env(safe-area-inset-top) + 70px)}
+  .snd-toggle.off svg{stroke:rgba(169,192,224,.55)}
   .brand{display:flex;flex-direction:column;align-items:center}
   .brand .mark{width:clamp(140px,44vw,210px);height:auto;border-radius:50%;box-shadow:0 6px 22px rgba(0,0,0,.5)}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -249,6 +251,7 @@
 
 <div class="wrap">
   <header>
+    <button class="fs-toggle snd-toggle" id="sndBtn" type="button" aria-label="Toggle sound"></button>
     <button class="fs-toggle" id="fsBtn" type="button" aria-label="Toggle fullscreen">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
     <h1 class="sr">Angler's Arrows</h1>
@@ -298,7 +301,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.29.0";
+const APP_VERSION="1.30.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -598,6 +601,7 @@ function onTap(pc,g){
     const hb=el("hintbar");
     hb.innerHTML=`Wrong choice <b>${S.blocked}</b> of 6 this game. Choose wisely.`;
     hb.classList.add("warn"); hb.classList.remove("shakeit"); void hb.offsetWidth; hb.classList.add("shakeit");
+    AUDIO.sfx("blocked");
     if(S.blocked%6===0){ guard();
       const m=el("taMsg");
       if(m) m.textContent=`You tapped ${S.blocked} arrows that couldn\u2019t move. An arrow only slides off when its path to the edge of the board is clear \u2014 clear whatever is blocking it first.`;
@@ -611,6 +615,7 @@ function onTap(pc,g){
   for(const [r,c] of pc.cells){ const dv=cellDiv.get(r+","+c);
     if(dv){ dv.classList.remove("faint"); dv.classList.add("lit","pop"); setTimeout(()=>dv.classList.remove("pop"),440); } }
   if(navigator.vibrate) navigator.vibrate(8);
+  AUDIO.sfx("clear");
   updateProgress(); updateButtons(); setGhostOpacity();
   const hb2=el("hintbar"); hb2.classList.remove("warn","shakeit");
   hb2.textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
@@ -656,10 +661,10 @@ function updateButtons(){ if(!S) return; el("undoBtn").disabled=!S.history.lengt
 
 function undo(){ if(!S) return; if(!S.history.length||S.won||S.busy) return;
   const id=S.history.pop(); const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id);
-  S.remaining++; S.moves++; S.undos++; renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
+  S.remaining++; S.moves++; S.undos++; AUDIO.sfx("undo"); renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
 function reset(){ if(!S||S.busy||S.won) return;
   for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
-  S.remaining=S.total; S.history=[]; S.blocked=0; forceShow(el("tryagain"), false);
+  S.remaining=S.total; S.history=[]; S.blocked=0; AUDIO.sfx("reset"); forceShow(el("tryagain"), false);
   renderBoard(false); updateProgress(); updateButtons();
   el("hintbar").classList.remove("warn","shakeit");
   el("hintbar").textContent="Fresh start — study the fish and plan your order."; }
@@ -667,6 +672,7 @@ function hint(){ if(!S||S.won||S.busy) return; clearHints();
   const firable=S.pieces.filter(pc=>pc.alive&&headRayClear(pc)); if(!firable.length) return;
   const pc=firable[(Math.random()*firable.length)|0];
   const g=S.svg&&S.svg.querySelector(`.arrow[data-id="${pc.id}"]`);
+  AUDIO.sfx("hint");
   if(g){ g.classList.add("hint"); setTimeout(()=>clearHints(),1400);
     el("hintbar").textContent = firable.length>1 ? `${firable.length} arrows can move now — here's one.` : "This one has a clear path out."; } }
 function clearHints(){ if(S&&S.svg) S.svg.querySelectorAll(".arrow.hint").forEach(g=>g.classList.remove("hint")); }
@@ -696,6 +702,7 @@ function win(){
   }
   else { for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv){ dv.classList.remove("faint"); dv.classList.add("lit"); } } }
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
+  AUDIO.sting(); AUDIO.sfx("win");
   const last=S.level>=FISH.length-1;
   const cta = last
     ? `<button class="btn" id="caughtBtn">Fish Caught</button><button class="btn primary" id="againBtn">Dive again</button>`
@@ -728,7 +735,7 @@ function forceShow(node,on){
 let revealWasOpen=false;
 function revealIsOpen(){ const n=el("reveal"); return !!n && (n.classList.contains("show") || n.style.visibility==="visible"); }
 function openGuide(){
-  guard();
+  guard(); AUDIO.sfx("open");
   revealWasOpen = revealIsOpen();                      // came from the level-complete card? remember it
   ["reveal","detail","about"].forEach(id=>{ forceShow(el(id), false); });
   forceShow(el("guide"), true);                        // open FIRST, unconditionally
@@ -787,7 +794,7 @@ function resetAllProgress(){
   startLevel(0);
 }
 function closeGuide(){
-  guard(); forceShow(el("guide"), false);
+  guard(); AUDIO.sfx("close"); forceShow(el("guide"), false);
   // returning from Fish Caught must not strand a finished level with no way forward
   if(revealWasOpen || (S && S.won)){ revealWasOpen=false; reopenReveal(); }
 }
@@ -868,10 +875,85 @@ function on(id,fn){ const n=el(id); if(!n){ console.warn("missing #"+id); return
 
 on("undoBtn",undo); on("resetBtn",reset); on("hintBtn",hint);
 on("catchBtn",openGuide); on("guideClose",closeGuide); on("fsBtn",toggleFS);
+on("sndBtn",()=>{ AUDIO.unlock(); AUDIO.toggle(); updateSndIcon(); AUDIO.sfx("tap"); });
 on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); forceShow(el("about"), false); });
 on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); });
 on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
-on("playBtn",()=>{ el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
+on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("tap"); el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
+
+/* ---------- audio: music beds, reveal sting, optional SFX ---------- */
+const AUDIO=(()=>{
+  const DIR="assets/audio/";
+  const MUSIC={menu:"menu.mp3", freshwater:"play-freshwater.mp3", deep:"play-deep.mp3"};
+  // SFX are optional - if a file is absent the call is a silent no-op
+  const SFX={tap:"sfx-tap.mp3", blocked:"sfx-blocked.mp3", clear:"sfx-clear.mp3",
+             win:"sfx-win.mp3", star:"sfx-star.mp3", hint:"sfx-hint.mp3",
+             undo:"sfx-undo.mp3", reset:"sfx-reset.mp3", open:"sfx-open.mp3", close:"sfx-close.mp3"};
+  let unlocked=false, cur=null, curKey=null, sting=null;
+  const pool={};
+  const on=(k,d)=>{ const v=store.get(k); return v===null? d : v==="1"; };
+  let musicOn=on("aa_music",true), sfxOn=on("aa_sfx",true);
+
+  const mk=(file,loop,vol)=>{ const a=new Audio(DIR+file); a.loop=!!loop; a.volume=vol; a.preload="auto";
+    a.addEventListener("error",()=>{},{once:true}); return a; };
+
+  function fade(el,to,ms,done){
+    if(!el) return; const from=el.volume, t0=performance.now();
+    const step=(now)=>{ let p=(now-t0)/ms; if(p>1)p=1;
+      try{ el.volume=Math.max(0,Math.min(1,from+(to-from)*p)); }catch(e){}
+      if(p<1) requestAnimationFrame(step); else if(done) done(); };
+    requestAnimationFrame(step);
+  }
+  function playMusic(key){
+    if(!MUSIC[key]) return;
+    if(curKey===key && cur && !cur.paused) return;
+    curKey=key;
+    if(!unlocked||!musicOn) return;
+    const next=mk(MUSIC[key],true,0);
+    const old=cur; cur=next;
+    next.play().then(()=>{ fade(next,0.55,900); if(old) fade(old,0,700,()=>{try{old.pause()}catch(e){}}); })
+      .catch(()=>{});                                    // autoplay refused: stays silent until a gesture
+  }
+  function stopMusic(){ if(cur) fade(cur,0,400,()=>{try{cur.pause()}catch(e){}}); }
+  function duck(ms){ if(!cur) return; const v=cur.volume; fade(cur,0.16,220);
+    setTimeout(()=>fade(cur,v,700), ms||2600); }
+
+  return {
+    unlock(){ if(unlocked) return; unlocked=true;
+      // resume whatever the game asked for before the first gesture
+      if(curKey) { const k=curKey; curKey=null; playMusic(k); } },
+    music: playMusic,
+    stop: stopMusic,
+    sting(){ if(!unlocked||!musicOn && !sfxOn) return;
+      try{ if(!sting) sting=mk("reveal-sting.mp3",false,0.85);
+        sting.currentTime=0; sting.play().catch(()=>{}); duck(3200); }catch(e){} },
+    sfx(name){ if(!unlocked||!sfxOn||!SFX[name]) return;
+      try{ let arr=pool[name]; if(!arr){ arr=pool[name]=[mk(SFX[name],false,0.5),mk(SFX[name],false,0.5),mk(SFX[name],false,0.5)]; }
+        const a=arr.find(x=>x.paused||x.ended)||arr[0];
+        a.currentTime=0; a.playbackRate=0.94+Math.random()*0.12; a.play().catch(()=>{});
+      }catch(e){} },
+    isMusicOn:()=>musicOn, isSfxOn:()=>sfxOn,
+    toggle(){                                            // both -> music only -> off -> both
+      if(musicOn&&sfxOn){ musicOn=true; sfxOn=false; }
+      else if(musicOn&&!sfxOn){ musicOn=false; sfxOn=false; stopMusic(); }
+      else { musicOn=true; sfxOn=true; if(curKey){const k=curKey;curKey=null;playMusic(k);} }
+      store.set("aa_music",musicOn?"1":"0"); store.set("aa_sfx",sfxOn?"1":"0");
+      return {musicOn,sfxOn};
+    }
+  };
+})();
+const SND_ICON={
+  both:`<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg>`,
+  music:`<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`,
+  off:`<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6"/><path d="M22 9l-5 6"/></svg>`
+};
+function updateSndIcon(){
+  const b=el("sndBtn"); if(!b) return;
+  const m=AUDIO.isMusicOn(), s=AUDIO.isSfxOn();
+  b.innerHTML = m&&s ? SND_ICON.both : (m ? SND_ICON.music : SND_ICON.off);
+  b.classList.toggle("off", !m && !s);
+  b.setAttribute("aria-label", m&&s?"Sound on":(m?"Music only":"Sound off"));
+}
 
 /* ---------- ambient underwater scene ---------- */
 const ENVS=["assets/themes/coral-reef.png","assets/themes/sunken-pirate-ship.png"];
@@ -881,9 +963,11 @@ const FACES={"largemouth-bass":"right","channel-catfish":"left","rainbow-trout":
 let envIdx=-1, swimTimer=null;
 function setEnvironment(){                     // only called when a new game/level starts
   const img=el("envImg"); if(!img||!ENVS.length) return;
+  
   const next=(envIdx+1+Math.floor(Math.random()*ENVS.length))%ENVS.length;
   if(next===envIdx) return;                    // keep the same backdrop between menus
   envIdx=next;
+  AUDIO.music(/pirate|wreck/i.test(ENVS[envIdx]) ? "deep" : "freshwater");   // bed matches the scene
   const probe=new Image();
   probe.onload=()=>{ img.classList.remove("in"); setTimeout(()=>{ img.src=probe.src; img.classList.add("in"); },400); };
   probe.onerror=()=>{};
@@ -921,7 +1005,10 @@ function startAmbient(){
   if(swimTimer) return;
   setTimeout(spawnSwimmer, 1200);
   swimTimer=setInterval(()=>{ if(!document.hidden) spawnSwimmer(); }, 14000);
-  document.addEventListener("visibilitychange",()=>{ if(document.hidden) el("scene").querySelectorAll(".swimmer").forEach(n=>n.remove()); });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){ el("scene").querySelectorAll(".swimmer").forEach(n=>n.remove()); AUDIO.stop(); }
+    else if(S) AUDIO.music(/pirate|wreck/i.test(ENVS[Math.max(0,envIdx)]||"") ? "deep" : "freshwater");
+  });
 }
 
 /* bubbles */
@@ -930,7 +1017,7 @@ function startAmbient(){
   b.style.setProperty("--drift",(Math.random()*40-20)+"px");b.style.animationDuration=(10+Math.random()*12)+"s";
   b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
 
-startAmbient(); loadCredits();
+startAmbient(); loadCredits(); updateSndIcon();
 startLevel(Math.min(Number(store.get("aa_progress")||0), FISH.length-1));
 try{ document.getElementById("brandbar").innerHTML=`<b>${APP_BRAND}</b><span class="dot">\u2022</span>${APP_NAME}<span class="dot">\u2022</span>v${APP_VERSION}`; }catch(e){}
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }

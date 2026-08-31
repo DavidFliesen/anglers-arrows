@@ -1,4 +1,4 @@
-# Angler's Arrows v1.29.0 — deployment / file placement
+# Angler's Arrows v1.30.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,8 +7,8 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.29.0)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.29.0)
+├── index.html                  ← REPLACE (v1.30.0)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.30.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -49,5 +49,46 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.29.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.30.0**.
 3. Fish Caught should list 15 species.
+
+## Audio (added v1.30.0)
+
+Music files ship in the zip and go here:
+
+```
+assets/audio/
+├── menu.mp3              ← splash / menu loop      (your "Splash")
+├── play-freshwater.mp3   ← gameplay bed, reef      (your "Freshwater")
+├── play-deep.mp3         ← gameplay bed, wreck     (your "Deep Wreck")
+└── reveal-sting.mp3      ← level-complete sting    (your "3.5 Sec Sting")
+```
+
+Re-encoded to 96 kbps stereo (sting 128 kbps): **13.5 MB → 7.4 MB**.
+
+### Sound effects — optional, add any time
+Drop MP3s into the SAME folder with these exact names. Any file that is absent is
+simply skipped, so you can add them one at a time with no code change:
+
+| File | Plays when |
+|---|---|
+| `sfx-clear.mp3`   | an arrow slides off the board (most frequent — keep it short/soft) |
+| `sfx-blocked.mp3` | a blocked arrow is tapped |
+| `sfx-win.mp3`     | level complete (layers under the sting) |
+| `sfx-star.mp3`    | stars awarded |
+| `sfx-hint.mp3`    | Hint |
+| `sfx-undo.mp3`    | Undo |
+| `sfx-reset.mp3`   | Reset |
+| `sfx-open.mp3`    | Fish Caught opens |
+| `sfx-close.mp3`   | Fish Caught closes |
+| `sfx-tap.mp3`     | general button tap |
+
+Pitch is randomised ±6% per play so repeats don't grate.
+
+### Behaviour
+- Audio unlocks on the **Start fishing** tap (iOS blocks autoplay before a gesture).
+- The gameplay bed follows the environment: reef → freshwater, shipwreck → deep.
+- The sting ducks the music, then fades it back.
+- Sound button sits under the fullscreen toggle and cycles:
+  **Sound on → Music only → Sound off**, saved between sessions.
+- Music stops when the tab is hidden and resumes on return.
