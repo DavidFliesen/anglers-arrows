@@ -342,7 +342,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.32.0";
+const APP_VERSION="1.33.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -743,7 +743,7 @@ function win(){
   }
   else { for(const [key] of S.cells){ const dv=cellDiv.get(key); if(dv){ dv.classList.remove("faint"); dv.classList.add("lit"); } } }
   if(navigator.vibrate) navigator.vibrate([12,40,18]);
-  AUDIO.sting(); AUDIO.sfx("win");
+  AUDIO.sting(); AUDIO.sfx("win");   // music dips fully under both
   const last=S.level>=FISH.length-1;
   const cta = last
     ? `<button class="btn" id="caughtBtn">Fish Caught</button><button class="btn primary" id="againBtn">Dive again</button>`
@@ -992,8 +992,20 @@ const AUDIO=(()=>{
       .catch(()=>{});                                    // autoplay refused: stays silent until a gesture
   }
   function stopMusic(){ if(cur) fade(cur,0,400,()=>{try{cur.pause()}catch(e){}}); }
-  function duck(ms){ if(!cur) return; const v=cur.volume; fade(cur,0.16,220);
-    setTimeout(()=>fade(cur,v,700), ms||2600); }
+  let duckT=null, duckDepth=0;
+  function duckDown(){                                   // take the music fully out from under the sting
+    if(!cur) return;
+    if(!duckDepth) duckDepth=musicVol;                   // remember the level to come back to
+    clearTimeout(duckT); duckT=null;
+    fade(cur, 0, 200);
+  }
+  function duckUp(delay){
+    clearTimeout(duckT);
+    duckT=setTimeout(()=>{ duckT=null;
+      const back=duckDepth||musicVol; duckDepth=0;
+      if(cur) fade(cur, back, 1100);                     // ease back in, don't snap
+    }, delay||0);
+  }
 
   return {
     unlock(){ if(unlocked) return; unlocked=true;
@@ -1001,9 +1013,23 @@ const AUDIO=(()=>{
       if(curKey) { const k=curKey; curKey=null; playMusic(k); } },
     music: playMusic,
     stop: stopMusic,
-    sting(){ if(!unlocked||!musicOn && !sfxOn) return;
-      try{ if(!sting) sting=mk("reveal-sting.mp3",false,0.85); sting.volume=Math.max(sfxVol,musicVol);
-        sting.currentTime=0; sting.play().catch(()=>{}); duck(3200); }catch(e){} },
+    sting(){ if(!unlocked||(!musicOn && !sfxOn)) return;
+      try{
+        if(!sting){ sting=mk("reveal-sting.mp3",false,0.9);
+          sting.addEventListener("ended",()=>duckUp(120));      // music returns when the sting finishes
+        }
+        sting.volume=Math.max(sfxVol,musicVol,0.6);
+        duckDown();
+        sting.currentTime=0;
+        const p=sting.play();
+        if(p&&p.catch) p.catch(()=>duckUp(0));                  // playback refused: restore immediately
+        // safety net in case 'ended' never fires (file missing / interrupted)
+        const dur=(isFinite(sting.duration)&&sting.duration>0)?sting.duration*1000:5200;
+        duckUp(dur+400);
+      }catch(e){ duckUp(0); }
+    },
+    // let a big one-off SFX dip the music too, then bring it back
+    duckFor(ms){ duckDown(); duckUp(ms||1200); },
     sfx(name){ if(!unlocked||!sfxOn||!SFX[name]) return;
       try{ let arr=pool[name]; if(!arr){ arr=pool[name]=[mk(SFX[name],false,0.5),mk(SFX[name],false,0.5),mk(SFX[name],false,0.5)]; }
         const a=arr.find(x=>x.paused||x.ended)||arr[0];

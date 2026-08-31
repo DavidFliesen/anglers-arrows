@@ -1,4 +1,4 @@
-# Angler's Arrows v1.32.0 — deployment / file placement
+# Angler's Arrows v1.33.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,8 +7,8 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.32.0)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.32.0)
+├── index.html                  ← REPLACE (v1.33.0)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.33.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -49,10 +49,10 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.32.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.33.0**.
 3. Fish Caught should list 15 species.
 
-## Audio (added v1.32.0)
+## Audio (added v1.33.0)
 
 Music files ship in the zip and go here:
 
@@ -93,7 +93,7 @@ Pitch is randomised ±6% per play so repeats don't grate.
   **Sound on → Music only → Sound off**, saved between sessions.
 - Music stops when the tab is hidden and resumes on return.
 
-## Settings panel (v1.32.0)
+## Settings panel (v1.33.0)
 Gear icon, top-right under the sound button:
 - **Music level** / **Sound level** \u2014 sliders, saved to storage. Raising a level from 0 re-enables
   that channel automatically. Releasing the sound slider plays a sample at the new level.
@@ -103,3 +103,9 @@ Gear icon, top-right under the sound button:
 
 Audio unlocks on the player's first touch anywhere (iOS requirement). The menu bed owns the splash
 screen and hands over to the gameplay bed on "Start fishing".
+
+## Ducking (v1.33.0)
+The reveal sting takes the music fully out: fade to silence in 200ms, hold for the sting's real
+duration, then ease back over 1.1s. Short SFX (arrow clear, taps) deliberately do NOT duck \u2014 at
+one clear per second the music would pump. If you want a big one-off effect to dip the music,
+call `AUDIO.duckFor(ms)` alongside it.
