@@ -68,6 +68,26 @@
   .fs-toggle:active{transform:translateY(1px)}
   .fs-toggle svg{width:30px;height:30px;stroke:var(--aqua);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .snd-toggle{top:calc(env(safe-area-inset-top) + 70px)}
+  .set-toggle{top:calc(env(safe-area-inset-top) + 132px)}
+  .set-toggle svg{fill:none}
+  .setrow{margin:0 0 20px}
+  .setrow label{display:flex;justify-content:space-between;align-items:baseline;font-size:15.5px;font-weight:700;color:#eaf2ff;margin:0 0 10px}
+  .setrow .val{font-family:var(--mono);font-size:13px;color:var(--aqua-hi);font-weight:800}
+  .setrow input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;cursor:pointer}
+  .setrow input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;
+    background:linear-gradient(90deg,var(--aqua) var(--pct,50%),rgba(255,255,255,.14) var(--pct,50%))}
+  .setrow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-9px;border-radius:50%;
+    background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .setrow input[type=range]::-moz-range-track{height:8px;border-radius:999px;background:rgba(255,255,255,.14)}
+  .setrow input[type=range]::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff}
+  .switchrow{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:4px 0 6px}
+  .switchrow .txt h4{margin:0 0 4px;font-size:15.5px;font-weight:700;color:#eaf2ff}
+  .switchrow .txt p{margin:0;font-size:12.5px;color:var(--mist);line-height:1.4;max-width:30ch}
+  .switch{position:relative;flex:0 0 58px;width:58px;height:33px;border-radius:999px;border:1px solid rgba(169,192,224,.3);
+    background:rgba(255,255,255,.09);cursor:pointer;transition:background .2s ease}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;background:#fff;transition:transform .2s ease}
+  .switch.on{background:linear-gradient(160deg,var(--aqua),var(--aqua-lo));border-color:transparent}
+  .switch.on::after{transform:translateX(25px)}
   .snd-toggle.off svg{stroke:rgba(169,192,224,.55)}
   .brand{display:flex;flex-direction:column;align-items:center}
   .brand .mark{width:clamp(140px,44vw,210px);height:auto;border-radius:50%;box-shadow:0 6px 22px rgba(0,0,0,.5)}
@@ -138,6 +158,7 @@
   .overlay.show{opacity:1;visibility:visible}
   #detail{z-index:9600}
   #about{z-index:9700}
+  #settings{z-index:9800}
   body.tapguard .guide-scroll{pointer-events:none !important}
   body.tapguard .board .arrow .hit,body.tapguard .board .arrow .head{pointer-events:none !important}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
@@ -252,6 +273,9 @@
 <div class="wrap">
   <header>
     <button class="fs-toggle snd-toggle" id="sndBtn" type="button" aria-label="Toggle sound"></button>
+    <button class="fs-toggle set-toggle" id="setBtn" type="button" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.7 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.7a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.3 9c.24.58.8.97 1.42 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    </button>
     <button class="fs-toggle" id="fsBtn" type="button" aria-label="Toggle fullscreen">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
     <h1 class="sr">Angler's Arrows</h1>
@@ -275,6 +299,23 @@
 
 <div class="overlay" id="reveal" role="dialog" aria-modal="true" aria-label="Species revealed"><div class="card" id="revealCard"></div></div>
 <div class="overlay" id="detail" role="dialog" aria-modal="true" aria-label="Species detail"><div class="card" id="detailCard"></div></div>
+<div class="overlay" id="settings" role="dialog" aria-modal="true" aria-label="Settings"><div class="card"><div class="panel" style="text-align:left">
+  <div class="caught" style="text-align:center">Settings</div>
+  <h2 style="text-align:center;font-size:26px;margin-bottom:18px">Sound &amp; Display</h2>
+  <div class="setrow">
+    <label for="musicVol">Music level <span class="val" id="musicVolVal">55%</span></label>
+    <input type="range" id="musicVol" min="0" max="100" step="5" value="55" />
+  </div>
+  <div class="setrow">
+    <label for="sfxVol">Sound level <span class="val" id="sfxVolVal">50%</span></label>
+    <input type="range" id="sfxVol" min="0" max="100" step="5" value="50" />
+  </div>
+  <div class="switchrow">
+    <div class="txt"><h4>Fullscreen lock</h4><p>Go fullscreen on launch and stay there between levels.</p></div>
+    <button class="switch" id="fsLock" type="button" role="switch" aria-checked="false" aria-label="Fullscreen lock"></button>
+  </div>
+  <div class="cta"><button class="btn primary" id="setClose">Done</button></div>
+</div></div></div>
 <div class="overlay" id="about" role="dialog" aria-modal="true" aria-label="About this app"><div class="card"><div class="panel" style="text-align:left">
   <div class="caught" style="text-align:center">About</div>
   <h2 style="text-align:center;font-size:28px">Angler’s Arrows</h2>
@@ -301,7 +342,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.30.0";
+const APP_VERSION="1.31.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -515,7 +556,7 @@ function renderHeaderStars(best){ const w=el("stars"); w.innerHTML="";
     const svg=s.firstChild; svg.classList.add("s"); if(i<best) svg.classList.add("on"); w.appendChild(svg); } }
 
 async function startLevel(i){
-  guard(); setEnvironment();
+  guard(); setEnvironment(); applyFSLock();
   el("level").textContent="Level "+String(i+1).padStart(2,"0");
   renderHeaderStars(Number(store.get("aa_stars_"+i)||0));
   el("hintbar").textContent="Surfacing the next puzzle…"; el("bar").style.width="0%";
@@ -727,7 +768,7 @@ function forceShow(node,on){
   if(on){ document.body.appendChild(node);            // re-append so it always paints on top
     node.classList.add("show");
     const disp = node.classList.contains("mini") || node.classList.contains("overlay") ? "grid" : "flex";
-    const zmap={about:9700,detail:9600,tryagain:9500,guide:9400,reveal:9300};
+    const zmap={settings:9800,about:9700,detail:9600,tryagain:9500,guide:9400,reveal:9300};
     node.style.cssText+=";display:"+disp+";opacity:1;visibility:visible;pointer-events:auto;z-index:"+(zmap[node.id]||9000)+";";
   } else { node.classList.remove("show");
     node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
@@ -805,6 +846,32 @@ function reopenReveal(){
 }
 function openAbout(){ guard(); forceShow(el("about"), true); }
 
+/* ---------- settings ---------- */
+function fsLockOn(){ return store.get("aa_fslock")==="1"; }
+function paintRange(inp){ if(inp) inp.style.setProperty("--pct", inp.value+"%"); }
+function openSettings(){
+  guard(); AUDIO.sfx("open");
+  const mv=el("musicVol"), sv=el("sfxVol"), lk=el("fsLock");
+  mv.value=Math.round(AUDIO.getMusicVol()*100); el("musicVolVal").textContent=mv.value+"%"; paintRange(mv);
+  sv.value=Math.round(AUDIO.getSfxVol()*100);   el("sfxVolVal").textContent=sv.value+"%";   paintRange(sv);
+  lk.classList.toggle("on", fsLockOn()); lk.setAttribute("aria-checked", fsLockOn()?"true":"false");
+  forceShow(el("settings"), true);
+}
+function initSettings(){
+  const mv=el("musicVol"), sv=el("sfxVol"), lk=el("fsLock");
+  if(mv) mv.addEventListener("input",()=>{ AUDIO.unlock(); const v=+mv.value;
+    el("musicVolVal").textContent=v+"%"; paintRange(mv); AUDIO.setMusicVol(v/100); updateSndIcon(); });
+  if(sv){ sv.addEventListener("input",()=>{ AUDIO.unlock(); const v=+sv.value;
+      el("sfxVolVal").textContent=v+"%"; paintRange(sv); AUDIO.setSfxVol(v/100); updateSndIcon(); });
+    sv.addEventListener("change",()=>AUDIO.preview()); }          // hear the level you picked
+  if(lk) lk.onclick=()=>{ const now=!fsLockOn(); store.set("aa_fslock", now?"1":"0");
+    lk.classList.toggle("on",now); lk.setAttribute("aria-checked",now?"true":"false");
+    AUDIO.sfx("tap"); if(now) applyFSLock(); };
+}
+function applyFSLock(){ if(!fsLockOn()) return;
+  try{ if(fsSupported()){ if(!fsActive()) enterFS(); } else document.body.classList.add("immersive"); applyFSIcon(); }catch(e){}
+}
+
 /* ---------- per-species image credits (parsed from assets/CREDITS.txt) ---------- */
 let creditsMap=null, creditsPromise=null;
 function loadCredits(){
@@ -876,10 +943,13 @@ function on(id,fn){ const n=el(id); if(!n){ console.warn("missing #"+id); return
 on("undoBtn",undo); on("resetBtn",reset); on("hintBtn",hint);
 on("catchBtn",openGuide); on("guideClose",closeGuide); on("fsBtn",toggleFS);
 on("sndBtn",()=>{ AUDIO.unlock(); AUDIO.toggle(); updateSndIcon(); AUDIO.sfx("tap"); });
+on("setBtn",openSettings); on("setClose",()=>{ guard(); AUDIO.sfx("close"); forceShow(el("settings"), false); });
 on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); forceShow(el("about"), false); });
-on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); });
+on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); AUDIO.music("menu"); });
 on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
-on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("tap"); el("splash").classList.add("hide"); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
+on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("tap");
+  AUDIO.music(/pirate|wreck/i.test(ENVS[Math.max(0,envIdx)]||"") ? "deep" : "freshwater");
+  el("splash").classList.add("hide"); applyFSLock(); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
 
 /* ---------- audio: music beds, reveal sting, optional SFX ---------- */
 const AUDIO=(()=>{
@@ -893,6 +963,8 @@ const AUDIO=(()=>{
   const pool={};
   const on=(k,d)=>{ const v=store.get(k); return v===null? d : v==="1"; };
   let musicOn=on("aa_music",true), sfxOn=on("aa_sfx",true);
+  const num=(k,d)=>{ const v=parseFloat(store.get(k)); return isNaN(v)?d:Math.max(0,Math.min(1,v)); };
+  let musicVol=num("aa_musicvol",0.55), sfxVol=num("aa_sfxvol",0.5);
 
   const mk=(file,loop,vol)=>{ const a=new Audio(DIR+file); a.loop=!!loop; a.volume=vol; a.preload="auto";
     a.addEventListener("error",()=>{},{once:true}); return a; };
@@ -911,7 +983,7 @@ const AUDIO=(()=>{
     if(!unlocked||!musicOn) return;
     const next=mk(MUSIC[key],true,0);
     const old=cur; cur=next;
-    next.play().then(()=>{ fade(next,0.55,900); if(old) fade(old,0,700,()=>{try{old.pause()}catch(e){}}); })
+    next.play().then(()=>{ fade(next,musicVol,900); if(old) fade(old,0,700,()=>{try{old.pause()}catch(e){}}); })
       .catch(()=>{});                                    // autoplay refused: stays silent until a gesture
   }
   function stopMusic(){ if(cur) fade(cur,0,400,()=>{try{cur.pause()}catch(e){}}); }
@@ -925,14 +997,21 @@ const AUDIO=(()=>{
     music: playMusic,
     stop: stopMusic,
     sting(){ if(!unlocked||!musicOn && !sfxOn) return;
-      try{ if(!sting) sting=mk("reveal-sting.mp3",false,0.85);
+      try{ if(!sting) sting=mk("reveal-sting.mp3",false,0.85); sting.volume=Math.max(sfxVol,musicVol);
         sting.currentTime=0; sting.play().catch(()=>{}); duck(3200); }catch(e){} },
     sfx(name){ if(!unlocked||!sfxOn||!SFX[name]) return;
       try{ let arr=pool[name]; if(!arr){ arr=pool[name]=[mk(SFX[name],false,0.5),mk(SFX[name],false,0.5),mk(SFX[name],false,0.5)]; }
         const a=arr.find(x=>x.paused||x.ended)||arr[0];
-        a.currentTime=0; a.playbackRate=0.94+Math.random()*0.12; a.play().catch(()=>{});
+        a.volume=sfxVol; a.currentTime=0; a.playbackRate=0.94+Math.random()*0.12; a.play().catch(()=>{});
       }catch(e){} },
     isMusicOn:()=>musicOn, isSfxOn:()=>sfxOn,
+    getMusicVol:()=>musicVol, getSfxVol:()=>sfxVol,
+    setMusicVol(v){ musicVol=Math.max(0,Math.min(1,v)); store.set("aa_musicvol",String(musicVol));
+      if(cur) try{ cur.volume=musicVol; }catch(e){}
+      if(musicVol>0 && !musicOn){ musicOn=true; store.set("aa_music","1"); if(curKey){const k=curKey;curKey=null;playMusic(k);} } },
+    setSfxVol(v){ sfxVol=Math.max(0,Math.min(1,v)); store.set("aa_sfxvol",String(sfxVol));
+      if(sfxVol>0 && !sfxOn){ sfxOn=true; store.set("aa_sfx","1"); } },
+    preview(){ this.sfx("tap"); },
     toggle(){                                            // both -> music only -> off -> both
       if(musicOn&&sfxOn){ musicOn=true; sfxOn=false; }
       else if(musicOn&&!sfxOn){ musicOn=false; sfxOn=false; stopMusic(); }
@@ -961,13 +1040,14 @@ const ENVS=["assets/themes/coral-reef.png","assets/themes/sunken-pirate-ship.png
 const FACES={"largemouth-bass":"right","channel-catfish":"left","rainbow-trout":"right","redfish":"right",
              "flounder":"right","mudfish":"right","swordfish":"right","anglerfish":"left"};
 let envIdx=-1, swimTimer=null;
+function splashUp(){ const sp=el("splash"); return !!sp && !sp.classList.contains("hide"); }
 function setEnvironment(){                     // only called when a new game/level starts
   const img=el("envImg"); if(!img||!ENVS.length) return;
   
   const next=(envIdx+1+Math.floor(Math.random()*ENVS.length))%ENVS.length;
   if(next===envIdx) return;                    // keep the same backdrop between menus
   envIdx=next;
-  AUDIO.music(/pirate|wreck/i.test(ENVS[envIdx]) ? "deep" : "freshwater");   // bed matches the scene
+  if(!splashUp()) AUDIO.music(/pirate|wreck/i.test(ENVS[envIdx]) ? "deep" : "freshwater");  // bed matches the scene
   const probe=new Image();
   probe.onload=()=>{ img.classList.remove("in"); setTimeout(()=>{ img.src=probe.src; img.classList.add("in"); },400); };
   probe.onerror=()=>{};
@@ -1017,9 +1097,19 @@ function startAmbient(){
   b.style.setProperty("--drift",(Math.random()*40-20)+"px");b.style.animationDuration=(10+Math.random()*12)+"s";
   b.style.animationDelay=(-Math.random()*18)+"s";box.appendChild(b);}})();
 
-startAmbient(); loadCredits(); updateSndIcon();
+startAmbient(); loadCredits(); updateSndIcon(); initSettings();
 startLevel(Math.min(Number(store.get("aa_progress")||0), FISH.length-1));
 try{ document.getElementById("brandbar").innerHTML=`<b>${APP_BRAND}</b><span class="dot">\u2022</span>${APP_NAME}<span class="dot">\u2022</span>v${APP_VERSION}`; }catch(e){}
+// the splash is the first thing on screen, so the menu bed owns the audio until "Start fishing".
+// iOS keeps it silent until the first touch, which the listener below supplies.
+if(splashUp()) AUDIO.music("menu");
+["pointerdown","touchstart","keydown"].forEach(ev=>{
+  document.addEventListener(ev, function once(){
+    ["pointerdown","touchstart","keydown"].forEach(e2=>document.removeEventListener(e2, once, true));
+    AUDIO.unlock();
+  }, true);
+});
+
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }
 </script>
 </body>

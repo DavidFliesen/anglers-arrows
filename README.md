@@ -1,11 +1,16 @@
-# Angler's Arrows — v1.30.0
+# Angler's Arrows — v1.31.0
 
-**Version 1.30.0** · ARTEZIQ · updated 2026-08-30
+**Version 1.31.0** · ARTEZIQ · updated 2026-08-31
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.31.0** — Menu music now plays on the splash screen (it was being overwritten by the gameplay
+  bed at boot, and unlocked too late). Audio now unlocks on the player's first touch anywhere, and
+  the menu bed hands over to the gameplay bed on "Start fishing". New **Settings** panel behind a
+  gear icon under the sound button: **Music level**, **Sound level** and **Fullscreen lock**, all
+  saved between sessions.
 - **1.30.0** — Audio added: menu loop, two gameplay beds that follow the environment (reef →
   freshwater, wreck → deep), and a reveal sting that ducks the music. Unlocks on the first tap for
   iOS. Three-state sound button (on / music only / off) saved between sessions. Optional SFX hooks
