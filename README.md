@@ -1,11 +1,16 @@
-# Angler's Arrows — v1.33.0
+# Angler's Arrows — v1.34.0
 
-**Version 1.33.0** · ARTEZIQ · updated 2026-08-31
+**Version 1.34.0** · ARTEZIQ · updated 2026-08-31
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.34.0** — Dropped the habitat scene behind the board: it was a different painting from the
+  cutout, so the two fish never lined up. The cutout is now the only artwork. The reveal is also
+  **sectional** — the picture is sliced one tile per grid cell, so clearing an arrow surfaces
+  exactly the part of the fish it was covering, instead of fading the whole image. Finishing a level
+  sweeps the remaining tiles in from the centre.
 - **1.33.0** — Music now dips **fully to silent** under the reveal sting (previously only to 16%),
   fading out in 200ms and easing back over 1.1s once the sting actually ends — driven by the audio
   `ended` event rather than a fixed timeout, with a safety net if it never fires.
