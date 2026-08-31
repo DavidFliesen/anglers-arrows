@@ -168,6 +168,7 @@
   #detail{z-index:9600}
   #about{z-index:9700}
   #settings{z-index:9800}
+  #diffpick{z-index:9750}
   body.tapguard .guide-scroll{pointer-events:none !important}
   body.tapguard .board .arrow .hit,body.tapguard .board .arrow .head{pointer-events:none !important}
   .card{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;max-height:calc(100vh - 32px);overflow:auto}
@@ -235,6 +236,15 @@
   .gcard .info .tap{font-size:11px;color:var(--aqua-lo);font-weight:800;margin-top:6px;letter-spacing:.04em}
   .gback{display:inline-flex;align-items:center;background:rgba(5,22,29,.4);border:1px solid rgba(169,192,224,.24);color:var(--foam);font-family:var(--font);font-weight:800;font-size:14px;padding:11px 16px;border-radius:12px;cursor:pointer;margin:2px 0 16px}
   .gback:active{transform:translateY(1px)}
+  .diffopt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid rgba(169,192,224,.2);border-radius:16px;
+    padding:14px 16px;margin:0 0 10px;color:var(--foam);font-family:var(--font)}
+  .diffopt:active{transform:translateY(1px)}
+  .diffopt.on{background:linear-gradient(160deg,rgba(46,198,230,.22),rgba(28,159,196,.14));border-color:var(--aqua)}
+  .diffopt .dot{flex:0 0 22px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(169,192,224,.5)}
+  .diffopt.on .dot{border-color:var(--aqua);background:radial-gradient(circle,var(--aqua) 45%,transparent 48%)}
+  .diffopt h4{margin:0 0 3px;font-size:17px;font-weight:800}
+  .diffopt p{margin:0;font-size:12.5px;color:var(--mist);line-height:1.35}
   .resetwrap{margin:20px 0 10px;text-align:center}
   .resetall{width:100%;max-width:320px;background:rgba(255,90,70,.12);border:1px solid rgba(255,120,100,.45);
     color:#ffb9ab;font-weight:800;font-size:15px;padding:15px 12px;border-radius:15px;cursor:pointer}
@@ -308,6 +318,12 @@
 
 <div class="overlay" id="reveal" role="dialog" aria-modal="true" aria-label="Species revealed"><div class="card" id="revealCard"></div></div>
 <div class="overlay" id="detail" role="dialog" aria-modal="true" aria-label="Species detail"><div class="card" id="detailCard"></div></div>
+<div class="overlay" id="diffpick" role="dialog" aria-modal="true" aria-label="Choose difficulty"><div class="card"><div class="panel">
+  <div class="caught" style="text-align:center">Pick your water</div>
+  <h2 style="text-align:center;font-size:27px;margin-bottom:6px">How hard a trip?</h2>
+  <p class="fact" style="text-align:center;margin:0 0 16px">You can change this any time in Settings.</p>
+  <div id="diffList"></div>
+</div></div></div>
 <div class="overlay" id="settings" role="dialog" aria-modal="true" aria-label="Settings"><div class="card"><div class="panel" style="text-align:left">
   <div class="caught" style="text-align:center">Settings</div>
   <h2 style="text-align:center;font-size:26px;margin-bottom:18px">Sound &amp; Display</h2>
@@ -318,6 +334,10 @@
   <div class="setrow">
     <label for="sfxVol">Sound level <span class="val" id="sfxVolVal">50%</span></label>
     <input type="range" id="sfxVol" min="0" max="100" step="5" value="50" tabindex="-1" inputmode="none" />
+  </div>
+  <div class="setrow">
+    <label style="margin-bottom:12px">Difficulty</label>
+    <div id="diffListSettings"></div>
   </div>
   <div class="switchrow">
     <div class="txt"><h4>Fullscreen lock</h4><p>Go fullscreen on launch and stay there between levels.</p></div>
@@ -351,7 +371,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.36.0";
+const APP_VERSION="1.37.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -417,8 +437,24 @@ FISH.forEach(f=>{ f.slug=f.id;
   f.thumb  ="assets/thumbs/"+f.id+"_thumb.png";    // list rows + drifting background fish
 });
 
-function levelWidth(i){ return 24 + Math.round(i * 8 / (FISH.length-1)); } // 24..32
-const MINLEN=3, MAXLEN=7;
+/* ---------- difficulty ---------- */
+const DIFFS=[
+  {id:"shallows", name:"Shallows",     sub:"Fewer, longer arrows \u2014 an easy wade",       scale:0.80, maxLen:8},
+  {id:"open",     name:"Open Water",   sub:"A fair fight \u2014 the standard trip",          scale:1.00, maxLen:7},
+  {id:"deep",     name:"Deep Current", sub:"Dense tangles \u2014 for seasoned anglers",      scale:1.22, maxLen:6}
+];
+function currentDiff(){
+  const id=store.get("aa_diff");
+  return DIFFS.find(d=>d.id===id) || DIFFS[1];          // Open Water is the middle default
+}
+function setDiff(id){ if(DIFFS.some(d=>d.id===id)) store.set("aa_diff", id); }
+
+function levelWidth(i){
+  const base = 24 + Math.round(i * 8 / (FISH.length-1));   // 24..32 across the roster
+  return Math.max(16, Math.min(44, Math.round(base * currentDiff().scale)));
+}
+const MINLEN=3;
+function maxLenNow(){ return currentDiff().maxLen; }
 
 /* ---------- rasterize fish into colored cells ---------- */
 const rasterCache={}, imgCache={};
@@ -521,7 +557,7 @@ function generatePieces(cellsSet,rows,cols){
           if(!rayClearOcc(occ,rows,cols,r,c,d)) continue;
           const forbidden=rayCellSet(rows,cols,r,c,d);
           const body=[[r,c]]; const bset=new Set([r+","+c]); let cur=[r,c];
-          for(let step=0; step<MAXLEN-1; step++){
+          for(let step=0; step<maxLenNow()-1; step++){
             const nbrs=[], ck=cur[0]+","+cur[1];
             const OPP={up:"down",down:"up",left:"right",right:"left"};
             for(const nd of DK){
@@ -822,7 +858,7 @@ function forceShow(node,on){
   if(on){ document.body.appendChild(node);            // re-append so it always paints on top
     node.classList.add("show");
     const disp = node.classList.contains("mini") || node.classList.contains("overlay") ? "grid" : "flex";
-    const zmap={settings:9800,about:9700,detail:9600,tryagain:9500,guide:9400,reveal:9300};
+    const zmap={settings:9800,diffpick:9750,about:9700,detail:9600,tryagain:9500,guide:9400,reveal:9300};
     node.style.cssText+=";display:"+disp+";opacity:1;visibility:visible;pointer-events:auto;z-index:"+(zmap[node.id]||9000)+";";
   } else { node.classList.remove("show");
     node.style.opacity=""; node.style.visibility=""; node.style.display=""; node.style.pointerEvents=""; node.style.zIndex=""; }
@@ -903,12 +939,37 @@ function openAbout(){ guard(); forceShow(el("about"), true); }
 /* ---------- settings ---------- */
 function fsLockOn(){ return store.get("aa_fslock")==="1"; }
 function paintRange(inp){ if(inp) inp.style.setProperty("--pct", inp.value+"%"); }
+function renderDiffOptions(host, onPick){
+  if(!host) return;
+  const cur=currentDiff().id;
+  host.innerHTML=DIFFS.map(d=>
+    `<button class="diffopt${d.id===cur?" on":""}" data-d="${d.id}" type="button">
+       <span class="dot"></span><span><h4>${d.name}</h4><p>${d.sub}</p></span>
+     </button>`).join("");
+  host.querySelectorAll(".diffopt").forEach(b=>{
+    b.onclick=()=>{ try{
+      setDiff(b.dataset.d); AUDIO.sfx("tap");
+      host.querySelectorAll(".diffopt").forEach(x=>x.classList.toggle("on", x===b));
+      if(onPick) onPick(b.dataset.d);
+    }catch(e){ unguard(); } };
+  });
+}
+function openDiffPick(){
+  guard();
+  renderDiffOptions(el("diffList"), (id)=>{
+    setTimeout(()=>{ forceShow(el("diffpick"), false); startLevel(gameStartLevel()); }, 180);
+  });
+  forceShow(el("diffpick"), true);
+}
+function gameStartLevel(){ return Math.min(Number(store.get("aa_progress")||0), FISH.length-1); }
+
 function openSettings(){
   guard(); AUDIO.sfx("open");
   const mv=el("musicVol"), sv=el("sfxVol"), lk=el("fsLock");
   mv.value=Math.round(AUDIO.getMusicVol()*100); el("musicVolVal").textContent=mv.value+"%"; paintRange(mv);
   sv.value=Math.round(AUDIO.getSfxVol()*100);   el("sfxVolVal").textContent=sv.value+"%";   paintRange(sv);
   lk.classList.toggle("on", fsLockOn()); lk.setAttribute("aria-checked", fsLockOn()?"true":"false");
+  renderDiffOptions(el("diffListSettings"), ()=>{ if(S && !S.won) startLevel(S.level); });  // apply at once
   forceShow(el("settings"), true);
 }
 function initSettings(){
@@ -1005,7 +1066,11 @@ on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash
 on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
 on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("tap");
   AUDIO.music(/pirate|wreck/i.test(ENVS[Math.max(0,envIdx)]||"") ? "deep" : "freshwater");
-  el("splash").classList.add("hide"); applyFSLock(); if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); } applyFSIcon(); });
+  el("splash").classList.add("hide"); applyFSLock();
+  if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); }
+  applyFSIcon();
+  openDiffPick();                     // ask which water every time a trip starts
+});
 
 /* ---------- audio: music beds, reveal sting, optional SFX ---------- */
 const AUDIO=(()=>{

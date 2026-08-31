@@ -1,11 +1,15 @@
-# Angler's Arrows — v1.36.0
+# Angler's Arrows — v1.37.0
 
-**Version 1.36.0** · ARTEZIQ · updated 2026-08-31
+**Version 1.37.0** · ARTEZIQ · updated 2026-08-31
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.37.0** — Added difficulty: **Shallows** / **Open Water** / **Deep Current**, defaulting to the
+  middle. It scales the board (roughly 27 / 37 / 62 arrows on level 1) and the maximum arrow length.
+  A picker appears every time you tap **Start fishing**, and the same control sits in Settings, where
+  changing it re-deals the current level immediately.
 - **1.36.0** — Reveal is now exhaustive: clearing an arrow surfaces **every** tile that is no longer
   under a live arrow, including the pale background slices, rippling outward from the arrow you
   cleared. Previously only the arrow's own cells (and one ring of neighbours) came up, which left

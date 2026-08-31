@@ -1,4 +1,4 @@
-# Angler's Arrows v1.36.0 — deployment / file placement
+# Angler's Arrows v1.37.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,8 +7,8 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.36.0)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.36.0)
+├── index.html                  ← REPLACE (v1.37.0)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.37.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -21,7 +21,7 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 └── assets/                     ← NEW folder (replaces images/ and tools/)
     ├── CREDITS.txt
     ├── fish/                   15 transparent cutouts  (puzzle shape, reveal, guide)
-    ├── puzzles/                (no longer used as of v1.36.0 — safe to delete)
+    ├── puzzles/                (no longer used as of v1.37.0 — safe to delete)
     ├── thumbs/                 15 small cutouts        (list rows, drifting fish)
     └── themes/                 coral-reef.png, sunken-pirate-ship.png
 ```
@@ -39,7 +39,7 @@ Leaving them costs space and serves stale art, but will not break the app.
 | File | Used for |
 |---|---|
 | `assets/fish/NN_slug_large.png`   | transparent cutout → arrow shape, reveal, Fish Caught detail |
-| `assets/puzzles/NN_slug_puzzle.jpg` | **unused since v1.36.0** — different painting from the cutout, never aligned |
+| `assets/puzzles/NN_slug_puzzle.jpg` | **unused since v1.37.0** — different painting from the cutout, never aligned |
 | `assets/thumbs/NN_slug_thumb.png` | Fish Caught list rows + drifting background fish |
 | `assets/themes/*.png`             | environments cycled at the start of each level |
 
@@ -49,10 +49,10 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.36.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.37.0**.
 3. Fish Caught should list 15 species.
 
-## Audio (added v1.36.0)
+## Audio (added v1.37.0)
 
 Music files ship in the zip and go here:
 
@@ -93,7 +93,7 @@ Pitch is randomised ±6% per play so repeats don't grate.
   **Sound on → Music only → Sound off**, saved between sessions.
 - Music stops when the tab is hidden and resumes on return.
 
-## Settings panel (v1.36.0)
+## Settings panel (v1.37.0)
 Gear icon, top-right under the sound button:
 - **Music level** / **Sound level** \u2014 sliders, saved to storage. Raising a level from 0 re-enables
   that channel automatically. Releasing the sound slider plays a sample at the new level.
@@ -104,8 +104,18 @@ Gear icon, top-right under the sound button:
 Audio unlocks on the player's first touch anywhere (iOS requirement). The menu bed owns the splash
 screen and hands over to the gameplay bed on "Start fishing".
 
-## Ducking (v1.36.0)
+## Ducking (v1.37.0)
 The reveal sting takes the music fully out: fade to silence in 200ms, hold for the sting's real
 duration, then ease back over 1.1s. Short SFX (arrow clear, taps) deliberately do NOT duck \u2014 at
 one clear per second the music would pump. If you want a big one-off effect to dip the music,
 call `AUDIO.duckFor(ms)` alongside it.
+
+## Difficulty (v1.37.0)
+| Setting | Feel | Board scale | Max arrow length |
+|---|---|---|---|
+| **Shallows** | fewer, longer arrows | 0.80x | 8 |
+| **Open Water** *(default)* | the standard trip | 1.00x | 7 |
+| **Deep Current** | dense tangles | 1.22x | 6 |
+
+Stored as `aa_diff`. Asked on every **Start fishing**, and changeable in Settings (which re-deals the
+current level). Every difficulty still generates only solvable, deadlock-free boards.
