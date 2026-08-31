@@ -90,6 +90,10 @@
   .switch.on::after{transform:translateX(25px)}
   .snd-toggle.off svg{stroke:rgba(169,192,224,.55)}
   .brand{display:flex;flex-direction:column;align-items:center}
+  .homebtn{background:none;border:0;padding:0;cursor:pointer;display:block;line-height:0;
+    -webkit-tap-highlight-color:transparent;transition:transform .15s ease, filter .15s ease}
+  .homebtn:active{transform:scale(.96)}
+  .homebtn:hover{filter:brightness(1.08)}
   .brand .mark{width:clamp(140px,44vw,210px);height:auto;border-radius:50%;box-shadow:0 6px 22px rgba(0,0,0,.5)}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   .meta{display:flex;flex-direction:row;align-items:center;gap:12px}
@@ -264,7 +268,27 @@
   .splash{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:28px;background:radial-gradient(90% 70% at 50% 36%, #123a72, #00102e 78%);transition:opacity .55s ease, visibility .55s}
   .splash.hide{opacity:0;visibility:hidden}
   .splash .inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:420px}
-  .splash img{width:min(70vw,270px);height:auto;filter:drop-shadow(0 20px 32px rgba(0,0,0,.55));animation:sway 5s ease-in-out infinite}
+  .splash .logowrap{position:relative;display:inline-block;line-height:0}
+  .splash img{width:min(70vw,270px);height:auto;filter:drop-shadow(0 20px 32px rgba(0,0,0,.55));
+    animation:logo-surface 3.4s cubic-bezier(.22,.9,.25,1) both, sway 5s ease-in-out 3.4s infinite}
+  /* rises out of the depths, settles, then takes the gentle idle sway */
+  @keyframes logo-surface{
+    0%   {opacity:0; transform:translateY(120px) scale(.62) rotate(-9deg); filter:blur(9px) brightness(.45) drop-shadow(0 20px 32px rgba(0,0,0,.55))}
+    35%  {opacity:1; filter:blur(2px) brightness(.85) drop-shadow(0 20px 32px rgba(0,0,0,.55))}
+    62%  {transform:translateY(-14px) scale(1.06) rotate(3deg); filter:blur(0) brightness(1.18) drop-shadow(0 20px 34px rgba(0,0,0,.55))}
+    80%  {transform:translateY(4px) scale(.985) rotate(-1.5deg)}
+    100% {opacity:1; transform:translateY(0) scale(1) rotate(0deg); filter:none drop-shadow(0 20px 32px rgba(0,0,0,.55))}
+  }
+  /* a ring of water pushed aside as it surfaces */
+  .splash .ripple{position:absolute;left:50%;top:50%;width:56%;height:56%;transform:translate(-50%,-50%);
+    border-radius:50%;border:2px solid rgba(127,227,245,.5);opacity:0;pointer-events:none;
+    animation:logo-ripple 1.5s ease-out 1.5s 2 both}
+  @keyframes logo-ripple{
+    0%{opacity:.55;transform:translate(-50%,-50%) scale(.55)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}
+  }
+  .splash p, .splash .play{animation:rise-in .7s ease 2.5s both}
+  @keyframes rise-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .splash p{color:#e2ecfb;font-size:18px;line-height:1.65;margin:22px 0 0;text-shadow:0 1px 6px rgba(0,0,0,.5);max-width:34ch}
   .splash .play{margin-top:26px;max-width:240px}
 
@@ -273,7 +297,12 @@
   body.immersive .board-shell{margin-top:8px}
 
   @media (max-width:360px){.brand h1{font-size:18px}.brand .mark{width:46px;height:46px;flex-basis:46px}.panel h2{font-size:25px}.marks li{font-size:14.5px}}
-  @media (prefers-reduced-motion: reduce){.scene .swimmer{display:none}.scene .swimmer img{animation:none}*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
+  body.seen-intro .splash img{animation:sway 5s ease-in-out infinite}
+  body.seen-intro .splash .ripple{display:none}
+  body.seen-intro .splash p, body.seen-intro .splash .play{animation:none}
+  @media (prefers-reduced-motion: reduce){.splash img{animation:none !important}.splash .ripple{display:none}
+    .splash p,.splash .play{animation:none !important}
+    .scene .swimmer{display:none}.scene .swimmer img{animation:none}*{animation-duration:.001ms !important;animation-iteration-count:1 !important}.arrow,.overlay,.progress .bar,.cell,.splash,.guide-panel,.mini{transition-duration:.001ms !important}.bubble{display:none}}
 </style>
 </head>
 <body>
@@ -283,7 +312,7 @@
 
 <div class="splash" id="splash">
   <div class="inner">
-    <img src="icons/icon-512.png" alt="Angler's Arrows" />
+    <span class="logowrap"><img src="icons/icon-512.png" alt="Angler’s Arrows" /><span class="ripple" aria-hidden="true"></span></span>
     <p>Every puzzle is a fish built from arrows. Clear them all to reveal the species — and learn to know it by its features.</p>
     <button class="btn primary play" id="playBtn" type="button">Start fishing</button>
   </div>
@@ -298,7 +327,7 @@
     <button class="fs-toggle" id="fsBtn" type="button" aria-label="Toggle fullscreen">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
     <h1 class="sr">Angler's Arrows</h1>
-    <div class="brand"><img class="mark" src="icons/icon-512.png" alt="Angler's Arrows" /></div>
+    <div class="brand"><button class="homebtn" id="homeBtn" type="button" aria-label="Back to the start screen"><img class="mark" src="icons/icon-512.png" alt="Angler’s Arrows" /></button></div>
     <div class="meta"><span class="level" id="level">Level 01</span><span class="stars" id="stars"></span></div>
   </header>
 
@@ -371,7 +400,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.37.0";
+const APP_VERSION="1.38.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -1058,6 +1087,15 @@ function on(id,fn){ const n=el(id); if(!n){ console.warn("missing #"+id); return
     }catch(err){ unguard(); toast("Error: "+(err&&err.message||err)); console.error(err); } }; }
 
 on("undoBtn",undo); on("resetBtn",reset); on("hintBtn",hint);
+on("homeBtn",()=>{
+  AUDIO.sfx("tap"); guard();
+  ["reveal","detail","about","settings","diffpick","tryagain"].forEach(id=>forceShow(el(id),false));
+  forceShow(el("guide"), false);
+  revealWasOpen=false;
+  document.body.classList.add("seen-intro");  // intro only plays on first load
+  el("splash").classList.remove("hide");     // progress is saved; the trip resumes from here
+  AUDIO.music("menu");
+});
 on("catchBtn",openGuide); on("guideClose",closeGuide); on("fsBtn",toggleFS);
 on("sndBtn",()=>{ AUDIO.unlock(); AUDIO.toggle(); updateSndIcon(); AUDIO.sfx("tap"); });
 on("setBtn",openSettings); on("setClose",()=>{ guard(); AUDIO.sfx("close"); forceShow(el("settings"), false); });
