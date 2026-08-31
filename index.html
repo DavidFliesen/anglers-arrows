@@ -351,7 +351,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.35.0";
+const APP_VERSION="1.36.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -588,6 +588,35 @@ async function startLevel(i){
   try{ renderBoard(true); }catch(e){}
   updateProgress(); updateButtons(); unguard();
 }
+// After an undo/reset the board is rebuilt from scratch; re-run the flood fill from
+// every already-cleared arrow so the picture matches the current state exactly.
+// After any arrow leaves, every tile that is no longer sitting under a live arrow
+// is revealed - including the pale background slices. Simple and exhaustive, so the
+// picture can never be left with holes in it. The ripple radiates from the arrow
+// that was just cleared, so it reads as "that section surfaced".
+function revealFrom(seedCells){
+  if(!S) return;
+  let sr=0, sc=0;
+  for(const [r,c] of seedCells){ sr+=r; sc+=c; }
+  sr/=seedCells.length; sc/=seedCells.length;                 // centre of the cleared arrow
+  const maxD=Math.hypot(S.rows,S.cols)||1;
+  for(const [key,dv] of cellDiv){
+    if(!dv || dv.classList.contains("lit")) continue;
+    if(S.occ.has(key)) continue;                              // still under an arrow
+    const [r,c]=key.split(",").map(Number);
+    const delay=Math.min((Math.hypot(r-sr,c-sc)/maxD)*900, 420);
+    setTimeout(()=>{ dv.classList.remove("faint","gap"); dv.classList.add("lit","pop");
+      setTimeout(()=>dv.classList.remove("pop"),560); }, delay);
+  }
+}
+
+function recomputeReveal(){
+  if(!S||!S.pieces) return;
+  const seeds=[];
+  for(const pc of S.pieces){ if(!pc.alive) seeds.push(...pc.cells); }
+  if(seeds.length) revealFrom(seeds);
+}
+
 function renderBoard(animateIn){
   board.style.gridTemplateColumns=`repeat(${S.cols},1fr)`; board.style.gridTemplateRows=`repeat(${S.rows},1fr)`;
   board.style.aspectRatio=`${S.cols} / ${S.rows}`; board.style.position="relative"; board.innerHTML=""; cellDiv.clear();
@@ -681,19 +710,7 @@ function onTap(pc,g){
   pc.alive=false; for(const [r,c] of pc.cells) S.occ.delete(r+","+c);
   S.history.push(pc.id); S.remaining--; S.moves++;
   flyOff(pc,g);
-  for(const [r,c] of pc.cells){
-    const dv=cellDiv.get(r+","+c);
-    if(dv){ dv.classList.remove("faint","gap"); dv.classList.add("lit","pop");
-      setTimeout(()=>dv.classList.remove("pop"),560); }
-    // feather: neighbours that no arrow covers come up too, so the revealed
-    // area has a soft edge instead of a hard staircase
-    for(const [nr,nc] of [[r-1,c],[r+1,c],[r,c-1],[r,c+1]]){
-      const nk=nr+","+nc, nv=cellDiv.get(nk);
-      if(nv && !S.occ.has(nk) && !nv.classList.contains("lit")){
-        nv.classList.remove("gap"); nv.classList.add("lit");
-      }
-    }
-  }
+  revealFrom(pc.cells);
   if(navigator.vibrate) navigator.vibrate(8);
   AUDIO.sfx("clear");
   updateProgress(); updateButtons(); setGhostOpacity();
@@ -736,7 +753,7 @@ function updateButtons(){ if(!S) return; el("undoBtn").disabled=!S.history.lengt
 
 function undo(){ if(!S) return; if(!S.history.length||S.won||S.busy) return;
   const id=S.history.pop(); const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id);
-  S.remaining++; S.moves++; S.undos++; AUDIO.sfx("undo"); renderBoard(false); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
+  S.remaining++; S.moves++; S.undos++; AUDIO.sfx("undo"); renderBoard(false); recomputeReveal(); updateProgress(); updateButtons(); el("hintbar").textContent="Move undone."; }
 function reset(){ if(!S||S.busy||S.won) return;
   for(const id of S.history){ const pc=S.pieces[id]; pc.alive=true; for(const [r,c] of pc.cells) S.occ.set(r+","+c,id); }
   S.remaining=S.total; S.history=[]; S.blocked=0; AUDIO.sfx("reset"); forceShow(el("tryagain"), false);
