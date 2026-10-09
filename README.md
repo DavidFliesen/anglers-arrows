@@ -1,11 +1,17 @@
-# Angler's Arrows — v1.40.0
+# Angler's Arrows — v1.41.0
 
-**Version 1.40.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.41.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.41.0** — Sound and reveal reworked. Your two recorded swooshes replace the synthesised one:
+  the brighter take plays on every arrow, the fuller take only on the **final** arrow of a level.
+  The other nine effects were re-synthesised with slow (28–55ms) attacks and rolled-off highs — the
+  gunshot quality came from 1–4ms attacks on broadband noise. The fish is now **hidden entirely
+  while you play** and arrives all at once when the last arrow leaves, rippling out from the centre
+  under the final swoosh.
 - **1.40.0** — New look and feel, after the arrow-maze references. The board is now dark and each
   arrow is coloured from a six-colour palette, assigned by graph colouring so that **no two arrows
   that touch or block each other ever share a colour** — every arrow stays traceable in a dense

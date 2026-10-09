@@ -114,11 +114,11 @@
   /* One tile per grid cell across the WHOLE board, so the picture is always complete;
      the tiles differ only in how strongly they are revealed. */
   .tile{position:relative;z-index:1;background-repeat:no-repeat;border-radius:0;margin:0;
-    opacity:.16;transition:opacity .5s ease, filter .5s ease;
+    opacity:0;transition:opacity .65s ease, filter .65s ease;
     filter:saturate(.3) brightness(.8);
     /* bleed each slice a hair past its cell so neighbouring tiles never show a seam */
     outline:1px solid transparent;outline-offset:-1px}
-  .tile.gap{opacity:.30;filter:saturate(.45) brightness(.9)}
+  .tile.gap{opacity:0}
   .tile.lit{opacity:1;filter:none}
   .tile.pop{animation:tileglow .55s ease}
   @keyframes tileglow{0%{filter:brightness(1.5) saturate(1.2)}100%{filter:none}}
@@ -400,7 +400,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.40.0";
+const APP_VERSION="1.41.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -694,6 +694,20 @@ async function startLevel(i){
 // is revealed - including the pale background slices. Simple and exhaustive, so the
 // picture can never be left with holes in it. The ripple radiates from the arrow
 // that was just cleared, so it reads as "that section surfaced".
+// The whole picture arrives at once, when the final arrow leaves: a ripple out
+// from the middle so the fish resolves rather than simply switching on.
+function revealAll(){
+  if(!S) return;
+  const cx=(S.cols-1)/2, cy=(S.rows-1)/2, maxD=Math.hypot(cx,cy)||1;
+  for(const [key,dv] of cellDiv){
+    if(!dv) continue;
+    const [r,c]=key.split(",").map(Number);
+    const delay=(Math.hypot(r-cy,c-cx)/maxD)*620;
+    setTimeout(()=>{ dv.classList.remove("faint","gap"); dv.classList.add("lit","pop");
+      setTimeout(()=>dv.classList.remove("pop"),560); }, delay);
+  }
+}
+
 function revealFrom(seedCells){
   if(!S) return;
   let sr=0, sc=0;
@@ -711,10 +725,8 @@ function revealFrom(seedCells){
 }
 
 function recomputeReveal(){
-  if(!S||!S.pieces) return;
-  const seeds=[];
-  for(const pc of S.pieces){ if(!pc.alive) seeds.push(...pc.cells); }
-  if(seeds.length) revealFrom(seeds);
+  // the fish is not shown until the level is finished, so after an undo or reset
+  // there is nothing to restore - the rebuilt tiles are already hidden
 }
 
 function renderBoard(animateIn){
@@ -811,13 +823,14 @@ function onTap(pc,g){
   pc.alive=false; for(const [r,c] of pc.cells) S.occ.delete(r+","+c);
   S.history.push(pc.id); S.remaining--; S.moves++;
   flyOff(pc,g);
-  revealFrom(pc.cells);
-  if(navigator.vibrate) navigator.vibrate(8);
-  AUDIO.sfx("clear");
-  updateProgress(); updateButtons(); setGhostOpacity();
+  const lastOne = (S.remaining===0);
+  if(navigator.vibrate) navigator.vibrate(lastOne?[14,40,20]:8);
+  AUDIO.sfx(lastOne ? "clearFinal" : "clear");
+  if(lastOne){ AUDIO.duckFor(2600); revealAll(); }   // the fish surfaces only now
+  updateProgress(); updateButtons();
   const hb2=el("hintbar"); hb2.classList.remove("warn","shakeit");
   hb2.textContent = S.remaining ? `${S.remaining} arrow${S.remaining>1?"s":""} left.` : "Surfacing…";
-  if(S.remaining===0){ S.won=true; setTimeout(win,540); }
+  if(lastOne){ S.won=true; setTimeout(win,1500); }   // let the final swoosh and the reveal breathe
 }
 function flyOff(pc,g){
   const [dr,dc]=DIRS[pc.dir];
@@ -889,17 +902,8 @@ function win(){
   store.set("aa_progress", String(Math.max(Number(store.get("aa_progress")||0), S.level+1)));
   const bestStars=Math.max(Number(store.get("aa_stars_"+S.level)||0), earned);
   store.set("aa_stars_"+S.level, String(bestStars)); renderHeaderStars(bestStars);
-  // final sweep: any tile still dim (gaps) surfaces, rippling out from the middle
-  const cx=(S.cols-1)/2, cy=(S.rows-1)/2, maxD=Math.hypot(cx,cy)||1;
-  for(const [key,dv0] of cellDiv){
-    const dv=dv0; if(!dv || dv.classList.contains("lit")) continue;
-    const [r,c]=key.split(",").map(Number);
-    const delay=(Math.hypot(c-cx,r-cy)/maxD)*260;
-    setTimeout(()=>{ dv.classList.remove("faint","gap"); dv.classList.add("lit","pop");
-      setTimeout(()=>dv.classList.remove("pop"),500); }, delay);
-  }
-  if(navigator.vibrate) navigator.vibrate([12,40,18]);
-  AUDIO.sting(); AUDIO.sfx("win");   // music dips fully under both
+  revealAll();                       // safety net: the final arrow already called this
+  AUDIO.sting(); AUDIO.sfx("win");   // lands on the tail of the final swoosh
   const last=S.level>=FISH.length-1;
   const cta = last
     ? `<button class="btn" id="caughtBtn">Fish Caught</button><button class="btn primary" id="againBtn">Dive again</button>`
@@ -1161,6 +1165,7 @@ const AUDIO=(()=>{
   const MUSIC={menu:"menu.mp3", freshwater:"play-freshwater.mp3", deep:"play-deep.mp3"};
   // SFX are optional - if a file is absent the call is a silent no-op
   const SFX={tap:"sfx-tap.mp3", blocked:"sfx-blocked.mp3", clear:"sfx-clear.mp3",
+             clearFinal:"sfx-clear-final.mp3",
              win:"sfx-win.mp3", star:"sfx-star.mp3", hint:"sfx-hint.mp3",
              undo:"sfx-undo.mp3", reset:"sfx-reset.mp3", open:"sfx-open.mp3", close:"sfx-close.mp3"};
   let unlocked=false, cur=null, curKey=null, sting=null;
@@ -1230,9 +1235,15 @@ const AUDIO=(()=>{
     // let a big one-off SFX dip the music too, then bring it back
     duckFor(ms){ duckDown(); duckUp(ms||1200); },
     sfx(name){ if(!unlocked||!sfxOn||!SFX[name]) return;
-      try{ let arr=pool[name]; if(!arr){ arr=pool[name]=[mk(SFX[name],false,0.5),mk(SFX[name],false,0.5),mk(SFX[name],false,0.5)]; }
+      try{
+        const LONG = (name==="clear"||name==="clearFinal");
+        const VOICES = LONG ? 7 : 3;                       // long swooshes overlap as you clear
+        let arr=pool[name];
+        if(!arr){ arr=pool[name]=[]; for(let i=0;i<VOICES;i++) arr.push(mk(SFX[name],false,sfxVol)); }
         const a=arr.find(x=>x.paused||x.ended)||arr[0];
-        a.volume=sfxVol; a.currentTime=0; a.playbackRate=0.94+Math.random()*0.12; a.play().catch(()=>{});
+        a.volume=sfxVol; a.currentTime=0;
+        a.playbackRate = LONG ? 1 : (0.96+Math.random()*0.08);   // never warp a recorded swoosh
+        a.play().catch(()=>{});
       }catch(e){} },
     isMusicOn:()=>musicOn, isSfxOn:()=>sfxOn,
     getMusicVol:()=>musicVol, getSfxVol:()=>sfxVol,
