@@ -1,11 +1,17 @@
-# Angler's Arrows — v1.41.0
+# Angler's Arrows — v1.43.0
 
-**Version 1.41.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.43.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.43.0** — Reverted the 1.42.0 sound experiment: the per-arrow sound is your recorded 2.5s
+  swoosh again, exactly as in 1.41.0, and the marimba, the pentatonic stepping and the per-play
+  pitch shift are gone. Instead, **sound effects now play at one third of their level whenever
+  music is audible**, so the swoosh sits under the bed rather than fighting it. The final arrow is
+  exempt — it already pulls the music out from under itself — and when music is off, muted, or
+  mid-duck, effects play at full level.
 - **1.41.0** — Sound and reveal reworked. Your two recorded swooshes replace the synthesised one:
   the brighter take plays on every arrow, the fuller take only on the **final** arrow of a level.
   The other nine effects were re-synthesised with slow (28–55ms) attacks and rolled-off highs — the

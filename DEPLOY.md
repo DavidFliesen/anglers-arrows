@@ -1,4 +1,4 @@
-# Angler's Arrows v1.41.0 — deployment / file placement
+# Angler's Arrows v1.43.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,8 +7,8 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.41.0)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.41.0)
+├── index.html                  ← REPLACE (v1.43.0)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.43.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -21,7 +21,7 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 └── assets/                     ← NEW folder (replaces images/ and tools/)
     ├── CREDITS.txt
     ├── fish/                   15 transparent cutouts  (puzzle shape, reveal, guide)
-    ├── puzzles/                (no longer used as of v1.41.0 — safe to delete)
+    ├── puzzles/                (no longer used as of v1.34.0 — safe to delete)
     ├── thumbs/                 15 small cutouts        (list rows, drifting fish)
     └── themes/                 coral-reef.png, sunken-pirate-ship.png
 ```
@@ -39,7 +39,7 @@ Leaving them costs space and serves stale art, but will not break the app.
 | File | Used for |
 |---|---|
 | `assets/fish/NN_slug_large.png`   | transparent cutout → arrow shape, reveal, Fish Caught detail |
-| `assets/puzzles/NN_slug_puzzle.jpg` | **unused since v1.41.0** — different painting from the cutout, never aligned |
+| `assets/puzzles/NN_slug_puzzle.jpg` | **unused since v1.34.0** — different painting from the cutout, never aligned |
 | `assets/thumbs/NN_slug_thumb.png` | Fish Caught list rows + drifting background fish |
 | `assets/themes/*.png`             | environments cycled at the start of each level |
 
@@ -49,10 +49,10 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.41.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.43.0**.
 3. Fish Caught should list 15 species.
 
-## Audio (added v1.41.0)
+## Audio (added v1.43.0)
 
 Music files ship in the zip and go here:
 
@@ -93,7 +93,7 @@ Pitch is randomised ±6% per play so repeats don't grate.
   **Sound on → Music only → Sound off**, saved between sessions.
 - Music stops when the tab is hidden and resumes on return.
 
-## Settings panel (v1.41.0)
+## Settings panel (v1.43.0)
 Gear icon, top-right under the sound button:
 - **Music level** / **Sound level** \u2014 sliders, saved to storage. Raising a level from 0 re-enables
   that channel automatically. Releasing the sound slider plays a sample at the new level.
@@ -104,13 +104,32 @@ Gear icon, top-right under the sound button:
 Audio unlocks on the player's first touch anywhere (iOS requirement). The menu bed owns the splash
 screen and hands over to the gameplay bed on "Start fishing".
 
-## Ducking (v1.41.0)
-The reveal sting takes the music fully out: fade to silence in 200ms, hold for the sting's real
-duration, then ease back over 1.1s. Short SFX (arrow clear, taps) deliberately do NOT duck \u2014 at
-one clear per second the music would pump. If you want a big one-off effect to dip the music,
-call `AUDIO.duckFor(ms)` alongside it.
+## Ducking (v1.43.0)
+Two independent mechanisms, in opposite directions:
 
-## Difficulty (v1.41.0)
+**Music under the sting.** The reveal sting takes the music fully out: fade to silence in 200ms,
+hold for the sting's real duration, then ease back over 1.1s. Call `AUDIO.duckFor(ms)` to do the
+same for any other big one-off effect. The final arrow uses this.
+
+**Effects under the music.** Every SFX is played at `sfxLevel(name)` rather than the raw `sfxVol`:
+
+```js
+const SFX_UNDER_MUSIC = 1/3;
+function musicAudible(){ return !!(musicOn && cur && !cur.paused && cur.volume > 0.01); }
+function sfxLevel(name){
+  if(name === "clearFinal") return sfxVol;          // the finale ducks the music instead
+  return musicAudible() ? sfxVol * SFX_UNDER_MUSIC : sfxVol;
+}
+```
+
+So with the Sound slider at 60%, the arrow swoosh plays at 20% while the bed is running and at
+60% when it is not. The level is recomputed per play, so toggling music takes effect on the next
+tap with no state to keep in sync. Change `SFX_UNDER_MUSIC` to adjust the ratio.
+
+Note the `cur.volume > 0.01` test: while the music is ducked out under the sting there is nothing
+to sit beneath, so effects correctly return to full level.
+
+## Difficulty (v1.43.0)
 | Setting | Feel | Board scale | Max arrow length |
 |---|---|---|---|
 | **Shallows** | fewer, longer arrows | 0.80x | 8 |
@@ -120,25 +139,26 @@ call `AUDIO.duckFor(ms)` alongside it.
 Stored as `aa_diff`. Asked on every **Start fishing**, and changeable in Settings (which re-deals the
 current level). Every difficulty still generates only solvable, deadlock-free boards.
 
-## Arrow colour (v1.41.0)
+## Arrow colour (v1.43.0)
 Arrows are coloured at generation time by `colourPieces()`. It builds a conflict graph — two arrows
 conflict if their cells touch (8-way) **or** if one sits in the other's exit lane — then greedily
 colours most-constrained-first from `ARROW_PALETTE`. Measured on real boards: 0 same-colour touches
 at every difficulty, 5 of 6 palette colours used. To restyle, edit `ARROW_PALETTE`; order matters
 only for which colour is most common.
 
-## Sound effects (v1.41.0)
+## Sound effects (v1.43.0)
 Eleven effects ship in `assets/audio/`:
-- `sfx-clear.mp3` — your recorded swoosh, on every arrow
-- `sfx-clear-final.mp3` — your fuller swoosh, **only on the last arrow of a level**
+- `sfx-clear.mp3` — your 2.5s swoosh, on every arrow
+- `sfx-clear-final.mp3` — your fuller 2.5s swoosh, **only on the last arrow of a level**
 - the rest (`blocked`, `tap`, `undo`, `reset`, `hint`, `star`, `win`, `open`, `close`) are
   synthesised with soft 28–55ms attacks and rolled-off highs
 
-Replace any file in place to change a sound — no code change needed. The two swooshes run ~2.5s
-and overlap while clearing quickly, so they get a 7-voice pool and are never pitch-shifted;
-short effects keep 3 voices and a ±4% pitch wobble so repeats do not sound identical.
+Replace any file in place to change a sound — no code change needed. The two swooshes overlap
+heavily while clearing quickly, so `clear` gets a 6-voice pool and `clearFinal` 4, and neither is
+ever pitch-shifted. Short effects keep 3 voices and a ±4% pitch wobble so repeats are not
+identical. Levels are set by `sfxLevel()` — see **Ducking** above.
 
-## Reveal timing (v1.41.0)
+## Reveal timing (v1.43.0)
 The fish stays hidden for the whole level. `revealAll()` fires the moment the final arrow leaves,
 rippling tiles out from the centre over ~620ms, with the species card following 1.5s later so the
 final swoosh and the reveal both have room.
