@@ -400,7 +400,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.43.0";
+const APP_VERSION="1.44.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 const store = (() => {
@@ -467,10 +467,11 @@ FISH.forEach(f=>{ f.slug=f.id;
 });
 
 /* ---------- difficulty ---------- */
+// sfx: each water answers in its own note, pitched down as the water deepens
 const DIFFS=[
-  {id:"shallows", name:"Shallows",     sub:"Fewer, longer arrows \u2014 an easy wade",       scale:0.80, maxLen:8},
-  {id:"open",     name:"Open Water",   sub:"A fair fight \u2014 the standard trip",          scale:1.00, maxLen:7},
-  {id:"deep",     name:"Deep Current", sub:"Dense tangles \u2014 for seasoned anglers",      scale:1.22, maxLen:6}
+  {id:"shallows", name:"Shallows",     sub:"Fewer, longer arrows \u2014 an easy wade",       scale:0.80, maxLen:8, sfx:"diffShallows"},
+  {id:"open",     name:"Open Water",   sub:"A fair fight \u2014 the standard trip",          scale:1.00, maxLen:7, sfx:"diffOpen"},
+  {id:"deep",     name:"Deep Current", sub:"Dense tangles \u2014 for seasoned anglers",      scale:1.22, maxLen:6, sfx:"diffDeep"}
 ];
 function currentDiff(){
   const id=store.get("aa_diff");
@@ -941,7 +942,7 @@ function forceShow(node,on){
 let revealWasOpen=false;
 function revealIsOpen(){ const n=el("reveal"); return !!n && (n.classList.contains("show") || n.style.visibility==="visible"); }
 function openGuide(){
-  guard(); AUDIO.sfx("open");
+  guard(); AUDIO.sfx("guideOpen");
   revealWasOpen = revealIsOpen();                      // came from the level-complete card? remember it
   ["reveal","detail","about"].forEach(id=>{ forceShow(el(id), false); });
   forceShow(el("guide"), true);                        // open FIRST, unconditionally
@@ -1000,7 +1001,7 @@ function resetAllProgress(){
   startLevel(0);
 }
 function closeGuide(){
-  guard(); AUDIO.sfx("close"); forceShow(el("guide"), false);
+  guard(); AUDIO.sfx("guideClose"); forceShow(el("guide"), false);
   // returning from Fish Caught must not strand a finished level with no way forward
   if(revealWasOpen || (S && S.won)){ revealWasOpen=false; reopenReveal(); }
 }
@@ -1023,7 +1024,10 @@ function renderDiffOptions(host, onPick){
      </button>`).join("");
   host.querySelectorAll(".diffopt").forEach(b=>{
     b.onclick=()=>{ try{
-      setDiff(b.dataset.d); AUDIO.sfx("tap");
+      setDiff(b.dataset.d);
+      const pick=DIFFS.find(d=>d.id===b.dataset.d);
+      AUDIO.sfx((pick&&pick.sfx) || "tap");              // each water has its own note
+
       host.querySelectorAll(".diffopt").forEach(x=>x.classList.toggle("on", x===b));
       if(onPick) onPick(b.dataset.d);
     }catch(e){ unguard(); } };
@@ -1151,7 +1155,7 @@ on("setBtn",openSettings); on("setClose",()=>{ guard(); AUDIO.sfx("close"); forc
 on("aboutBtn",openAbout); on("aboutClose",()=>{ guard(); forceShow(el("about"), false); });
 on("taQuit",()=>{ guard(); forceShow(el("tryagain"), false); reset(); el("splash").classList.remove("hide"); AUDIO.music("menu"); });
 on("taReset",()=>{ guard(); forceShow(el("tryagain"), false); reset(); });   // same fish, fresh board
-on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("tap");
+on("playBtn",()=>{ AUDIO.unlock(); AUDIO.sfx("start");
   AUDIO.music(/pirate|wreck/i.test(ENVS[Math.max(0,envIdx)]||"") ? "deep" : "freshwater");
   el("splash").classList.add("hide"); applyFSLock();
   if(fsSupported()) enterFS(); else { document.body.classList.add("immersive"); }
@@ -1167,7 +1171,14 @@ const AUDIO=(()=>{
   const SFX={tap:"sfx-tap.mp3", blocked:"sfx-blocked.mp3", clear:"sfx-clear.mp3",
              clearFinal:"sfx-clear-final.mp3",
              win:"sfx-win.mp3", star:"sfx-star.mp3", hint:"sfx-hint.mp3",
-             undo:"sfx-undo.mp3", reset:"sfx-reset.mp3", open:"sfx-open.mp3", close:"sfx-close.mp3"};
+             undo:"sfx-undo.mp3", reset:"sfx-reset.mp3", open:"sfx-open.mp3", close:"sfx-close.mp3",
+             // v1.44.0 - voices of their own, instead of the generic tap/open/close
+             start:"sfx-start.mp3",                        // "Start fishing"
+             diffShallows:"sfx-diff-shallows.mp3",         // the three waters, high to low
+             diffOpen:"sfx-diff-open.mp3",
+             diffDeep:"sfx-diff-deep.mp3",
+             guideOpen:"sfx-guide-open.mp3",               // Fish Caught panel
+             guideClose:"sfx-guide-close.mp3"};
   let unlocked=false, cur=null, curKey=null, sting=null;
   const pool={};
   const on=(k,d)=>{ const v=store.get(k); return v===null? d : v==="1"; };

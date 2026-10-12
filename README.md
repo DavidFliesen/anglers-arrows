@@ -1,11 +1,18 @@
-# Angler's Arrows — v1.43.0
+# Angler's Arrows — v1.44.0
 
-**Version 1.43.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.44.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.44.0** — Five UI elements that were sharing the generic `tap`/`open`/`close` beeps now have
+  voices of their own. **Start fishing** answers with a rising C4→G4 fifth over a water breath.
+  The **three waters** each answer in their own note, pitched down and lengthened as the water
+  deepens — Shallows D5 (400ms, bright), Open Water A4 (460ms), Deep Current D4 (580ms, dark).
+  A **wrong arrow** is a 210ms descending blub (300→190Hz over a muted 112Hz thud) — quick enough
+  not to interrupt play. **Fish Caught** opens on a rising A4+E5 with an upward water swell and
+  closes on the mirror of it, falling A4→D4. Everything else is untouched.
 - **1.43.0** — Reverted the 1.42.0 sound experiment: the per-arrow sound is your recorded 2.5s
   swoosh again, exactly as in 1.41.0, and the marimba, the pentatonic stepping and the per-play
   pitch shift are gone. Instead, **sound effects now play at one third of their level whenever
