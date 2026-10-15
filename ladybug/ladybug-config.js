@@ -4,32 +4,27 @@
  * NEVER paste a service-role key, Management API PAT, GitHub token, or password.
  *
  * ────────────────────────────────────────────────────────────────────────────
- *  ONE VALUE LEFT TO FILL IN:  appKey   (line 25)
+ *  FULLY CONFIGURED — the ladybug launcher will appear.
  * ────────────────────────────────────────────────────────────────────────────
- *  publishableKey below is already set — it is the same key every ARTEZIQ app
- *  uses, copied from Angler's Navigator.
+ *  supabaseUrl + publishableKey  shared by every ARTEZIQ app
+ *  appKey                        Angler's Arrows' own Public ingest key, from
+ *                                ARTEZIQ Feedback → Apps → Angler's Arrows
+ *  slug / sessionIdPrefix "AA"   match the dashboard's registry row
  *
- *  appKey is per-app. Angler's Arrows is ALREADY REGISTERED in the ARTEZIQ
- *  Feedback dashboard, so nothing needs creating — go to:
+ *  All of these are PUBLIC values and are meant to ship in browser code.
+ *  NEVER add a service-role key, Management API PAT, GitHub token or password.
  *
- *      ARTEZIQ Feedback → Apps → the "Angler's Arrows" row → Edit
+ *  Angler's Arrows is in DEVELOPMENT access mode, so only authorized ARTEZIQ
+ *  accounts can sign in and send. Switch it to Explorer Testing in the
+ *  dashboard when it goes out to testers — no code change needed.
  *
- *  and copy its Public ingest key (a UUID) onto line 25. Angler's Navigator's
- *  key (78de6de9-…) will NOT work here — reports would file under Navigator.
- *
- *  slug and the loader's sessionIdPrefix ("AA") already match what the
- *  dashboard shows for this app, so leave both alone.
- *
- *  Until appKey is a real value, ladybugConfigured() returns false and NO
- *  ladybug launcher is shown. That is by design, not a fault: the game runs
- *  normally without it. Load the app with  ?ladybug=debug  to see a chip
- *  confirming exactly which value is still missing.
- * ────────────────────────────────────────────────────────────────────────────
+ *  If the launcher ever stops appearing, load the app with  ?ladybug=debug
+ *  and the chip will name the missing value or the file that failed.
  */
 export const LADYBUG_CONFIG = {
   supabaseUrl: 'https://mehsjriwijsyquhmrzkh.supabase.co',
   publishableKey: 'sb_publishable_GJzFbU63AAgok24gxPrnSA_FL0H3kfu',
-  appKey: 'REPLACE_WITH_APP_PUBLIC_INGEST_KEY',
+  appKey: '147d09da-eb07-43a0-bc6e-fd4324ce4aad',
   slug: 'anglers-arrows',
   iconUrl: 'ladybug/assets/ladybug-feedback-icon-256.png',
   bottomOffsetPx: 16,        // package defaults; Arrows keeps the launcher clear by
