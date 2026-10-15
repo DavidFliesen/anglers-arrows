@@ -1,11 +1,20 @@
-# Angler's Arrows — v1.44.0
+# Angler's Arrows — v1.45.0
 
-**Version 1.44.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.45.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.45.0** — **ARTEZIQ Ladybug feedback**, wired the same way as Angler's Navigator so the
+  reporting experience is identical across ARTEZIQ apps: the shared `ladybug/` connector drops in
+  byte-identical, the floating bug launcher sits bottom-right, and approved testers sign in, capture
+  the app screen with one tap, preview it, and get a "Report sent" confirmation. Two Arrows-specific
+  fits: the controls row and the Fish Caught list are padded under `.has-ladybug` so the launcher
+  never covers the **Fish Caught** button, and the report panel runs outside fullscreen so iPadOS
+  Safari does not raise its "typing while in full screen" warning (the next tap on the game restores
+  fullscreen). Optional Tester Mode diagnostics carry only version, screen name, difficulty and
+  counts — never free text. The launcher stays hidden until the public keys are filled in.
 - **1.44.0** — Five UI elements that were sharing the generic `tap`/`open`/`close` beeps now have
   voices of their own. **Start fishing** answers with a rising C4→G4 fifth over a water breath.
   The **three waters** each answer in their own note, pitched down and lengthened as the water

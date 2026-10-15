@@ -149,6 +149,10 @@
   .brandbar b{color:#ffd9a3;font-weight:800;letter-spacing:.12em}
   .brandbar .dot{opacity:.5;margin:0 7px}
   .wrap{padding-bottom:calc(env(safe-area-inset-bottom) + 52px)}
+  /* Ladybug's launcher is fixed bottom-right and would land on the Fish Caught button,
+     so when it is mounted the controls row and the guide list are given room to clear it. */
+  .has-ladybug .wrap{padding-bottom:calc(env(safe-area-inset-bottom) + 92px)}
+  .has-ladybug .guide-scroll{padding-bottom:calc(env(safe-area-inset-bottom) + 100px)}
   .guide-scroll{padding-bottom:calc(env(safe-area-inset-bottom) + 60px)}
   .card{max-height:calc(100vh - 92px)}
 
@@ -400,9 +404,37 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.44.0";
+const APP_VERSION="1.45.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
+
+/* ---- ARTEZIQ Ladybug feedback hooks (privacy-safe) ----
+   anTrack() records MEANINGFUL, non-identifying workflow events for the optional Tester Mode.
+   It is a no-op unless the tester opted in inside the Ladybug panel. Never pass free text \u2014
+   only counts, booleans and short enum labels.
+   Until the Ladybug module has loaded (or if it never loads) events are held in a small queue. */
+window.__anTrackQ=[];
+window.anTrack=function(name,details){
+  try{ if(window.__anTrackQ.length<50) window.__anTrackQ.push([name,details]); }catch(e){}
+};
+// Screen name for feedback reports/telemetry \u2014 derived from what is visible, never from user input.
+window.anFeedbackContext=function(){
+  let screen="Playing";
+  try{
+    const up=id=>{ const n=document.getElementById(id);
+      return !!(n && (n.classList.contains("show") || n.style.visibility==="visible")); };
+    const sp=document.getElementById("splash");
+    if(sp && !sp.classList.contains("hide")) screen="Splash";
+    else if(up("settings"))  screen="Settings";
+    else if(up("diffpick"))  screen="Choose Difficulty";
+    else if(up("about"))     screen="About";
+    else if(up("detail"))    screen="Species Detail";
+    else if(up("tryagain"))  screen="Try Again";
+    else if(up("guide"))     screen="Fish Caught";
+    else if(up("reveal"))    screen="Level Complete";
+  }catch(e){}
+  return {appVersion:APP_VERSION, buildNumber:APP_VERSION, screen};
+};
 const store = (() => {
   let mem = {};
   try { const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
@@ -674,7 +706,10 @@ async function startLevel(i){
   const cols=levelWidth(i);
   let raster=null;
   try{ raster=await rasterizeFish(i,cols); }catch(e){ raster=null; }
-  if(!raster||!raster.cells||raster.cells.size<10){ raster=fallbackFish(Math.max(6,Math.round(cols*0.7)),cols); }
+  if(!raster||!raster.cells||raster.cells.size<10){
+    // the fish artwork did not rasterise - worth knowing about, it means a board of the wrong shape
+    anTrack("fish_raster_fallback",{type:"error",level:"warn",data:{level:i+1}});
+    raster=fallbackFish(Math.max(6,Math.round(cols*0.7)),cols); }
   let pieces=[];
   try{ pieces=generatePieces(new Set(raster.cells.keys()),raster.rows,raster.cols);
        colourPieces(pieces, raster.rows, raster.cols); }catch(e){ pieces=[]; }
@@ -688,6 +723,8 @@ async function startLevel(i){
     : "Clear every arrow to surface the species.";
   try{ renderBoard(true); }catch(e){}
   updateProgress(); updateButtons(); unguard();
+  anTrack("level_started",{type:"workflow",data:{
+    level:i+1, difficulty:currentDiff().id, arrows:pieces.length, rows:raster.rows, cols:raster.cols}});
 }
 // After an undo/reset the board is rebuilt from scratch; re-run the flood fill from
 // every already-cleared arrow so the picture matches the current state exactly.
@@ -815,6 +852,8 @@ function onTap(pc,g){
     hb.classList.add("warn"); hb.classList.remove("shakeit"); void hb.offsetWidth; hb.classList.add("shakeit");
     AUDIO.sfx("blocked");
     if(S.blocked%6===0){ guard();
+      anTrack("try_again_shown",{type:"workflow",data:{
+        level:S.level+1, difficulty:currentDiff().id, blocked:S.blocked, remaining:S.remaining}});
       const m=el("taMsg");
       if(m) m.textContent=`You tapped ${S.blocked} arrows that couldn\u2019t move. An arrow only slides off when its path to the edge of the board is clear \u2014 clear whatever is blocking it first.`;
       forceShow(el("tryagain"), true);
@@ -900,6 +939,9 @@ function mountFish(node,i,small){ const fish=FISH[i]; if(!node||!fish) return;
 
 function win(){
   const fish=FISH[S.level], earned=starsFor();
+  anTrack("level_completed",{type:"workflow",data:{
+    level:S.level+1, difficulty:currentDiff().id, stars:earned,
+    moves:S.moves, blocked:S.blocked, undos:S.undos, arrows:S.total}});
   store.set("aa_progress", String(Math.max(Number(store.get("aa_progress")||0), S.level+1)));
   const bestStars=Math.max(Number(store.get("aa_stars_"+S.level)||0), earned);
   store.set("aa_stars_"+S.level, String(bestStars)); renderHeaderStars(bestStars);
@@ -943,6 +985,7 @@ let revealWasOpen=false;
 function revealIsOpen(){ const n=el("reveal"); return !!n && (n.classList.contains("show") || n.style.visibility==="visible"); }
 function openGuide(){
   guard(); AUDIO.sfx("guideOpen");
+  anTrack("modal_opened",{type:"ui",data:{name:"fish_caught"}});
   revealWasOpen = revealIsOpen();                      // came from the level-complete card? remember it
   ["reveal","detail","about"].forEach(id=>{ forceShow(el(id), false); });
   forceShow(el("guide"), true);                        // open FIRST, unconditionally
@@ -993,6 +1036,7 @@ function renderGuideDetail(i){ guard(); const fish=FISH[i]; const scroll=el("gui
   on("gback2",()=>{ guard(); renderGuideList(); });
 }
 function resetAllProgress(){
+  anTrack("progress_reset",{type:"ui",data:{caughtBefore:Number(store.get("aa_progress")||0)}});
   try{ store.set("aa_progress","0");
     for(let i=0;i<FISH.length;i++) store.set("aa_stars_"+i,"0");
   }catch(e){}
@@ -1010,7 +1054,7 @@ function reopenReveal(){
   if(!card || !card.querySelector(".cta")) return;      // nothing to restore
   forceShow(el("reveal"), true);
 }
-function openAbout(){ guard(); forceShow(el("about"), true); }
+function openAbout(){ guard(); anTrack("modal_opened",{type:"ui",data:{name:"about"}}); forceShow(el("about"), true); }
 
 /* ---------- settings ---------- */
 function fsLockOn(){ return store.get("aa_fslock")==="1"; }
@@ -1027,6 +1071,7 @@ function renderDiffOptions(host, onPick){
       setDiff(b.dataset.d);
       const pick=DIFFS.find(d=>d.id===b.dataset.d);
       AUDIO.sfx((pick&&pick.sfx) || "tap");              // each water has its own note
+      anTrack("difficulty_chosen",{type:"ui",data:{difficulty:b.dataset.d}});
 
       host.querySelectorAll(".diffopt").forEach(x=>x.classList.toggle("on", x===b));
       if(onPick) onPick(b.dataset.d);
@@ -1047,6 +1092,7 @@ function gameStartLevel(){ return Math.min(Number(store.get("aa_progress")||0), 
 
 function openSettings(){
   guard(); AUDIO.sfx("open");
+  anTrack("modal_opened",{type:"ui",data:{name:"settings"}});
   const mv=el("musicVol"), sv=el("sfxVol"), lk=el("fsLock");
   mv.value=Math.round(AUDIO.getMusicVol()*100); el("musicVolVal").textContent=mv.value+"%"; paintRange(mv);
   sv.value=Math.round(AUDIO.getSfxVol()*100);   el("sfxVolVal").textContent=sv.value+"%";   paintRange(sv);
@@ -1374,6 +1420,100 @@ if(splashUp()) AUDIO.music("menu");
 });
 
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); }); }
+
+/* Ladybug's report panel has real text inputs. iPadOS Safari shows its "you are typing while in
+   full screen" warning when an input takes focus inside the Fullscreen API, which this app uses
+   on iPad, so the panel is run outside fullscreen. (iPhone Safari has no Fullscreen API at all -
+   there "immersive" is only a CSS class, so nothing needs doing.)
+
+   Leaving fullscreen can be done programmatically; re-entering it cannot - requestFullscreen is
+   only honoured inside a user gesture. So the restore is armed and fires on the tester's next tap
+   on the game, which is a real gesture and therefore accepted. */
+window.__anFSWasOn=false;
+function anFSSuspend(){
+  try{ if(!fsActive()) return; window.__anFSWasOn=true; exitFS(); }catch(e){}
+}
+function anFSArmRestore(){
+  if(!window.__anFSWasOn) return;
+  window.__anFSWasOn=false;
+  if(!fsSupported()) return;
+  const once=()=>{ document.removeEventListener("pointerdown",once,true);
+    try{ if(!fsActive()) enterFS(); }catch(e){} };
+  document.addEventListener("pointerdown",once,true);
+}
+/* Watches the connector's own overlay instead of wrapping its functions: the launcher binds the
+   module's internal open() directly, so a wrapper on the returned ladybug.open would never fire. */
+window.anFeedbackWatchPanel=function(host){
+  try{
+    const sr=host&&host.shadowRoot; if(!sr) return;
+    const overlay=sr.getElementById("overlay"), done=sr.getElementById("done");
+    if(!overlay) return;
+    const shut=n=>!n||n.hidden;
+    let wasOpen=false;
+    const check=()=>{
+      const open=!shut(overlay)||!shut(done);
+      if(open && !wasOpen) anFSSuspend();
+      else if(!open && wasOpen) anFSArmRestore();
+      wasOpen=open;
+    };
+    const mo=new MutationObserver(check);
+    mo.observe(overlay,{attributes:true,attributeFilter:["hidden"]});
+    if(done) mo.observe(done,{attributes:true,attributeFilter:["hidden"]});
+    check();
+  }catch(e){}
+};
+</script>
+
+<!-- ARTEZIQ LADYBUG FEEDBACK (centralized Feedback project). Loads only when the two public config
+     values in ladybug/ladybug-config.js are filled in. If anything fails to load, the app is unaffected. -->
+<script type="module">
+/* Status is exposed as <html data-ladybug="ready|unconfigured|error:<file>"> so a missing file is never silent.
+   Add ?ladybug=debug to the app URL to also show a small red chip naming the file that failed. */
+const LB=document.documentElement;
+let lbStep="ladybug/ladybug-config.js";
+try{
+  const {LADYBUG_CONFIG:cfg,ladybugConfigured}=await import("./ladybug/ladybug-config.js");
+  if(!ladybugConfigured(cfg)){
+    LB.dataset.ladybug="unconfigured";
+    console.info("[Ladybug] not configured yet — add the public keys in ladybug/ladybug-config.js to enable feedback.");
+  }else{
+    lbStep="ladybug/ladybug-auth.js";
+    const {createFeedbackAuth}=await import("./ladybug/ladybug-auth.js");
+    lbStep="ladybug/ladybug-feedback.js";
+    const {createLadybugFeedback}=await import("./ladybug/ladybug-feedback.js");
+    lbStep="mounting the launcher";
+    const auth=createFeedbackAuth({supabaseUrl:cfg.supabaseUrl,publishableKey:cfg.publishableKey});
+    const ladybug=createLadybugFeedback({
+      supabaseUrl:cfg.supabaseUrl,publishableKey:cfg.publishableKey,appKey:cfg.appKey,slug:cfg.slug,
+      appName:"Angler's Arrows",sessionIdPrefix:"AA",iconUrl:cfg.iconUrl,bottomOffsetPx:cfg.bottomOffsetPx,bottomOffsetPhonePx:cfg.bottomOffsetPhonePx,
+      auth,getAccessToken:(force)=>auth.getAccessToken(force),
+      getContext:()=>window.anFeedbackContext(),
+      // Screenshot privacy: this app shows no location or personal data, so only password-style
+      // fields are blanked. There is no map, so mapSelectors stays empty.
+      maskSelectors:["input[type=password]"],mapSelectors:[],
+    });
+    ladybug.mount();
+    document.documentElement.classList.add("has-ladybug");
+    // Run the report panel outside fullscreen on iPad (see anFeedbackWatchPanel above).
+    window.anFeedbackWatchPanel(document.querySelector("[data-arteziq-ladybug]"));
+    // Replace the queueing shim with the real tracker and drain anything recorded while loading.
+    const queued=window.__anTrackQ||[];
+    window.anTrack=(name,details)=>{try{ladybug.track(name,details);}catch(e){}};
+    queued.forEach(([n,d])=>window.anTrack(n,d));
+    window.__anTrackQ=[];
+    window.ArteziqFeedback=ladybug;
+    LB.dataset.ladybug="ready";
+  }
+}catch(e){
+  LB.dataset.ladybug="error:"+lbStep;
+  console.warn("[Ladybug] feedback did not load ("+lbStep+"); the app continues without it.",e&&e.message);
+  if(/[?&]ladybug=debug\b/.test(location.search)){
+    const c=document.createElement("div");
+    c.textContent="Ladybug failed: "+lbStep+(e&&e.message?" — "+e.message:"");
+    c.style.cssText="position:fixed;right:12px;bottom:12px;max-width:80vw;z-index:2147483000;background:#7a1212;color:#fff;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:8px;box-shadow:0 4px 14px #0008";
+    document.body.appendChild(c);
+  }
+}
 </script>
 </body>
 </html>
