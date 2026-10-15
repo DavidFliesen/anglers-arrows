@@ -2,19 +2,26 @@
  * ARTEZIQ Feedback — Angler's Arrows PUBLIC configuration.
  * ONLY public values belong here (publishable key + the app's Public ingest key).
  * NEVER paste a service-role key, Management API PAT, GitHub token, or password.
- * If a value is blank or REPLACE_*, the app simply does not show the Ladybug launcher.
  *
- * TO FINISH WIRING THIS APP, fill in the two REPLACE_ values below:
- *   publishableKey — the same value already in Angler's Navigator's ladybug-config.js
- *                    (it is shared across every ARTEZIQ app)
- *   appKey         — the Public ingest key for Angler's Arrows specifically. Register
- *                    the app in the ARTEZIQ Feedback project to get it; Navigator's
- *                    key will NOT work here.
- * Confirm `slug` below matches the slug the app is registered under.
+ * ────────────────────────────────────────────────────────────────────────────
+ *  ONE VALUE LEFT TO FILL IN:  appKey
+ * ────────────────────────────────────────────────────────────────────────────
+ *  publishableKey below is already set — it is the same key every ARTEZIQ app
+ *  uses, copied from Angler's Navigator.
+ *
+ *  appKey is per-app. Register "Angler's Arrows" in the ARTEZIQ Feedback
+ *  project and paste its Public ingest key below. Angler's Navigator's key
+ *  (78de6de9-…) will NOT work here — reports would file under Navigator.
+ *
+ *  Until appKey is a real value, ladybugConfigured() returns false and NO
+ *  ladybug launcher is shown. That is by design, not a fault: the game runs
+ *  normally without it. Load the app with  ?ladybug=debug  to see a chip
+ *  confirming exactly which value is still missing.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 export const LADYBUG_CONFIG = {
   supabaseUrl: 'https://mehsjriwijsyquhmrzkh.supabase.co',
-  publishableKey: 'REPLACE_WITH_SUPABASE_PUBLISHABLE_KEY',
+  publishableKey: 'sb_publishable_GJzFbU63AAgok24gxPrnSA_FL0H3kfu',
   appKey: 'REPLACE_WITH_APP_PUBLIC_INGEST_KEY',
   slug: 'anglers-arrows',
   iconUrl: 'ladybug/assets/ladybug-feedback-icon-256.png',
@@ -24,4 +31,13 @@ export const LADYBUG_CONFIG = {
 export function ladybugConfigured(cfg = LADYBUG_CONFIG) {
   const real = (v, min) => typeof v === 'string' && v.length >= min && !/^REPLACE/i.test(v) && !/\s/.test(v);
   return real(cfg.publishableKey, 20) && real(cfg.appKey, 8) && real(cfg.slug, 3);
+}
+/* Names whichever values are still placeholders, so "no ladybug" is never a mystery. */
+export function ladybugMissing(cfg = LADYBUG_CONFIG) {
+  const real = (v, min) => typeof v === 'string' && v.length >= min && !/^REPLACE/i.test(v) && !/\s/.test(v);
+  const out = [];
+  if (!real(cfg.publishableKey, 20)) out.push('publishableKey');
+  if (!real(cfg.appKey, 8)) out.push('appKey');
+  if (!real(cfg.slug, 3)) out.push('slug');
+  return out;
 }
