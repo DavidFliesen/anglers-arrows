@@ -4,14 +4,21 @@
  * NEVER paste a service-role key, Management API PAT, GitHub token, or password.
  *
  * ────────────────────────────────────────────────────────────────────────────
- *  ONE VALUE LEFT TO FILL IN:  appKey
+ *  ONE VALUE LEFT TO FILL IN:  appKey   (line 25)
  * ────────────────────────────────────────────────────────────────────────────
  *  publishableKey below is already set — it is the same key every ARTEZIQ app
  *  uses, copied from Angler's Navigator.
  *
- *  appKey is per-app. Register "Angler's Arrows" in the ARTEZIQ Feedback
- *  project and paste its Public ingest key below. Angler's Navigator's key
- *  (78de6de9-…) will NOT work here — reports would file under Navigator.
+ *  appKey is per-app. Angler's Arrows is ALREADY REGISTERED in the ARTEZIQ
+ *  Feedback dashboard, so nothing needs creating — go to:
+ *
+ *      ARTEZIQ Feedback → Apps → the "Angler's Arrows" row → Edit
+ *
+ *  and copy its Public ingest key (a UUID) onto line 25. Angler's Navigator's
+ *  key (78de6de9-…) will NOT work here — reports would file under Navigator.
+ *
+ *  slug and the loader's sessionIdPrefix ("AA") already match what the
+ *  dashboard shows for this app, so leave both alone.
  *
  *  Until appKey is a real value, ladybugConfigured() returns false and NO
  *  ladybug launcher is shown. That is by design, not a fault: the game runs
