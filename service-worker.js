@@ -1,5 +1,5 @@
 /* Angler's Arrows — service worker (network-first for HTML so updates reach players) */
-const CACHE = "anglers-arrows-1.46.0";
+const CACHE = "anglers-arrows-1.47.0";
 const ASSETS = [
   ".","index.html","manifest.webmanifest",
   "icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png",
@@ -25,6 +25,17 @@ self.addEventListener("fetch",(e)=>{
     e.respondWith(
       fetch(req).then((res)=>{ const copy=res.clone(); caches.open(CACHE).then((c)=>c.put(req,copy)).catch(()=>{}); return res; })
         .catch(()=>caches.match(req).then((r)=>r||caches.match("index.html")))
+    );
+    return;
+  }
+  // The Ladybug config holds the feedback keys and changes WITHOUT a version bump. Cache-first
+  // would pin a stale copy on every installed device until the cache name changed, so this one
+  // file is always network-first with a cached fallback for offline.
+  if(url.pathname.endsWith("/ladybug/ladybug-config.js")){
+    e.respondWith(
+      fetch(req,{cache:"no-store"}).then((res)=>{
+        const copy=res.clone(); caches.open(CACHE).then((c)=>c.put(req,copy)).catch(()=>{}); return res;
+      }).catch(()=>caches.match(req))
     );
     return;
   }

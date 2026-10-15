@@ -1,11 +1,17 @@
-# Angler's Arrows — v1.46.0
+# Angler's Arrows — v1.47.0
 
-**Version 1.46.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.47.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.47.0** — Fixes a stale-cache trap that kept the ladybug hidden even after the real feedback
+  key was deployed. Assets are served cache-first, so an installed device pinned the old
+  `ladybug-config.js` (with its placeholder keys) under the unchanged `1.46.0` cache name and never
+  re-fetched it — the server had the right file, the device never asked. `ladybug-config.js` is now
+  **network-first** with a cached fallback, because it holds keys that legitimately change without a
+  version bump. Cache name bumped so every device drops the stale copy once.
 - **1.46.0** — Ladybug setup fixes. `publishableKey` is now filled in (it is shared across every
   ARTEZIQ app), leaving only the per-app `appKey` to paste in. And an un-launched Ladybug no longer
   fails silently: the loader names which config values are still placeholders in the console, exposes
