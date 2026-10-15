@@ -404,7 +404,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="1.45.0";
+const APP_VERSION="1.46.0";
 const APP_NAME="Angler\u2019s Arrows";
 const APP_BRAND="ARTEZIQ";
 
@@ -1470,12 +1470,26 @@ window.anFeedbackWatchPanel=function(host){
 /* Status is exposed as <html data-ladybug="ready|unconfigured|error:<file>"> so a missing file is never silent.
    Add ?ladybug=debug to the app URL to also show a small red chip naming the file that failed. */
 const LB=document.documentElement;
+const lbChip=(msg,colour)=>{                      // only ever shown with ?ladybug=debug
+  if(!/[?&]ladybug=debug\b/.test(location.search)) return;
+  const c=document.createElement("div");
+  c.textContent=msg;
+  c.style.cssText="position:fixed;right:12px;bottom:12px;max-width:80vw;z-index:2147483000;background:"+colour+
+    ";color:#fff;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:8px;box-shadow:0 4px 14px #0008";
+  document.body.appendChild(c);
+};
 let lbStep="ladybug/ladybug-config.js";
 try{
-  const {LADYBUG_CONFIG:cfg,ladybugConfigured}=await import("./ladybug/ladybug-config.js");
+  const mod=await import("./ladybug/ladybug-config.js");
+  const {LADYBUG_CONFIG:cfg,ladybugConfigured}=mod;
   if(!ladybugConfigured(cfg)){
+    // Name what is missing rather than failing silently - an absent launcher is otherwise a mystery.
+    const missing=(typeof mod.ladybugMissing==="function") ? mod.ladybugMissing(cfg) : ["public keys"];
     LB.dataset.ladybug="unconfigured";
-    console.info("[Ladybug] not configured yet — add the public keys in ladybug/ladybug-config.js to enable feedback.");
+    LB.dataset.ladybugMissing=missing.join(",");
+    console.info("[Ladybug] no launcher shown: ladybug/ladybug-config.js still needs "+missing.join(" and ")+
+                 ". The app runs normally without feedback.");
+    lbChip("Ladybug hidden — ladybug-config.js still needs: "+missing.join(", "),"#7a5a12");
   }else{
     lbStep="ladybug/ladybug-auth.js";
     const {createFeedbackAuth}=await import("./ladybug/ladybug-auth.js");
@@ -1507,12 +1521,7 @@ try{
 }catch(e){
   LB.dataset.ladybug="error:"+lbStep;
   console.warn("[Ladybug] feedback did not load ("+lbStep+"); the app continues without it.",e&&e.message);
-  if(/[?&]ladybug=debug\b/.test(location.search)){
-    const c=document.createElement("div");
-    c.textContent="Ladybug failed: "+lbStep+(e&&e.message?" — "+e.message:"");
-    c.style.cssText="position:fixed;right:12px;bottom:12px;max-width:80vw;z-index:2147483000;background:#7a1212;color:#fff;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:8px;box-shadow:0 4px 14px #0008";
-    document.body.appendChild(c);
-  }
+  lbChip("Ladybug failed: "+lbStep+(e&&e.message?" — "+e.message:""),"#7a1212");
 }
 </script>
 </body>

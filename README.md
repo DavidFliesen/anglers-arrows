@@ -1,11 +1,16 @@
-# Angler's Arrows — v1.45.0
+# Angler's Arrows — v1.46.0
 
-**Version 1.45.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.46.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.46.0** — Ladybug setup fixes. `publishableKey` is now filled in (it is shared across every
+  ARTEZIQ app), leaving only the per-app `appKey` to paste in. And an un-launched Ladybug no longer
+  fails silently: the loader names which config values are still placeholders in the console, exposes
+  them as `<html data-ladybug-missing="...">`, and shows an amber chip under `?ladybug=debug`. The
+  previous build was correct but gave no on-screen reason for a missing bug button.
 - **1.45.0** — **ARTEZIQ Ladybug feedback**, wired the same way as Angler's Navigator so the
   reporting experience is identical across ARTEZIQ apps: the shared `ladybug/` connector drops in
   byte-identical, the floating bug launcher sits bottom-right, and approved testers sign in, capture
