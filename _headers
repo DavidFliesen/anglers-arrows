@@ -1,0 +1,28 @@
+# Cloudflare Pages headers for an ARTEZIQ tester copy. Put this file in the repo ROOT (next to index.html).
+# Cloudflare reads it; GitHub Pages ignores it, so it is harmless in the repo.
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Offline PWAs only: always re-check the service worker so tester updates arrive. Harmless if the file doesn't exist.
+/sw.js
+  Cache-Control: no-cache
+/service-worker.js
+  Cache-Control: no-cache
+
+# --- Added for Angler's Arrows (not in the shared template) ---------------------
+# Both files below change WITHOUT the app version changing, so a cached copy at the
+# edge would strand testers on old content. This is the exact failure that hid the
+# Ladybug launcher in v1.46.0, one layer further out.
+#
+# index.html carries the app version and the Ladybug loader; the service worker is
+# already network-first for it, but Cloudflare's edge sits in front of that.
+/index.html
+  Cache-Control: no-cache
+/
+  Cache-Control: no-cache
+
+# The feedback keys live here. Changing a key must take effect immediately.
+/ladybug/ladybug-config.js
+  Cache-Control: no-cache

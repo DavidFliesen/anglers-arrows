@@ -1,11 +1,19 @@
-# Angler's Arrows — v1.47.0
+# Angler's Arrows — v1.48.0
 
-**Version 1.47.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.48.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.48.0** — Prepared for a Cloudflare Pages tester copy alongside GitHub Pages. No app behaviour
+  changed: an audit confirmed every path is already relative and the manifest already uses
+  `start_url`/`scope` of `.`, so the same files serve correctly from a site root
+  (`anglers-arrows.pages.dev/`) and from a subpath (`davidfliesen.github.io/anglers-arrows/`) —
+  verified in both layouts with zero failed requests. Adds `_headers` (noindex for the tester copy,
+  plus no-cache on `index.html`, `/` and `ladybug-config.js` so edge caching cannot strand testers
+  on an old build) and `service-worker-KILLSWITCH.js`, an inert end-of-test worker that empties the
+  caches and unregisters itself so installed copies stop working offline once hosting is withdrawn.
 - **1.47.0** — Fixes a stale-cache trap that kept the ladybug hidden even after the real feedback
   key was deployed. Assets are served cache-first, so an installed device pinned the old
   `ladybug-config.js` (with its placeholder keys) under the unchanged `1.46.0` cache name and never
