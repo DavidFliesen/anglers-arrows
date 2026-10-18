@@ -1,4 +1,4 @@
-# Angler's Arrows v1.48.0 — deployment / file placement
+# Angler's Arrows v1.49.0 — deployment / file placement
 
 Unzip at the **root of your GitHub Pages repo** so paths land exactly as below.
 The app resolves every asset relative to `index.html`, so the folder names matter.
@@ -7,11 +7,11 @@ The app resolves every asset relative to `index.html`, so the folder names matte
 
 ```
 <repo root>/
-├── index.html                  ← REPLACE (v1.48.0)
-├── _headers                    ← NEW in v1.48.0 — Cloudflare only; GitHub Pages ignores it
-├── service-worker-KILLSWITCH.js ← NEW in v1.48.0 — INERT; see "Tester copy" below
-├── ladybug/                    ← NEW in v1.48.0 — upload the WHOLE folder (see below)
-├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.48.0)
+├── index.html                  ← REPLACE (v1.49.0)
+├── _headers                    ← NEW in v1.49.0 — Cloudflare only; GitHub Pages ignores it
+├── service-worker-KILLSWITCH.js ← NEW in v1.49.0 — INERT; see "Tester copy" below
+├── ladybug/                    ← NEW in v1.49.0 — upload the WHOLE folder (see below)
+├── service-worker.js           ← REPLACE (cache: anglers-arrows-1.49.0)
 ├── README.md                   ← REPLACE
 ├── manifest.webmanifest        ← keep your existing file
 ├── icons/                      ← keep your existing folder
@@ -52,10 +52,10 @@ same name — no code changes needed.
 
 ## Verify after deploying
 1. Hard-reload once or twice (service worker is network-first for the page).
-2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.48.0**.
+2. Bottom bar should read **ARTEZIQ • Angler's Arrows • v1.49.0**.
 3. Fish Caught should list 15 species.
 
-## Audio (added v1.48.0)
+## Audio (added v1.49.0)
 
 Music files ship in the zip and go here:
 
@@ -96,7 +96,7 @@ Pitch is randomised ±6% per play so repeats don't grate.
   **Sound on → Music only → Sound off**, saved between sessions.
 - Music stops when the tab is hidden and resumes on return.
 
-## Settings panel (v1.48.0)
+## Settings panel (v1.49.0)
 Gear icon, top-right under the sound button:
 - **Music level** / **Sound level** \u2014 sliders, saved to storage. Raising a level from 0 re-enables
   that channel automatically. Releasing the sound slider plays a sample at the new level.
@@ -107,7 +107,7 @@ Gear icon, top-right under the sound button:
 Audio unlocks on the player's first touch anywhere (iOS requirement). The menu bed owns the splash
 screen and hands over to the gameplay bed on "Start fishing".
 
-## Ducking (v1.48.0)
+## Ducking (v1.49.0)
 Two independent mechanisms, in opposite directions:
 
 **Music under the sting.** The reveal sting takes the music fully out: fade to silence in 200ms,
@@ -132,7 +132,7 @@ tap with no state to keep in sync. Change `SFX_UNDER_MUSIC` to adjust the ratio.
 Note the `cur.volume > 0.01` test: while the music is ducked out under the sting there is nothing
 to sit beneath, so effects correctly return to full level.
 
-## Difficulty (v1.48.0)
+## Difficulty (v1.49.0)
 | Setting | Feel | Board scale | Max arrow length |
 |---|---|---|---|
 | **Shallows** | fewer, longer arrows | 0.80x | 8 |
@@ -142,14 +142,53 @@ to sit beneath, so effects correctly return to full level.
 Stored as `aa_diff`. Asked on every **Start fishing**, and changeable in Settings (which re-deals the
 current level). Every difficulty still generates only solvable, deadlock-free boards.
 
-## Arrow colour (v1.48.0)
-Arrows are coloured at generation time by `colourPieces()`. It builds a conflict graph — two arrows
-conflict if their cells touch (8-way) **or** if one sits in the other's exit lane — then greedily
-colours most-constrained-first from `ARROW_PALETTE`. Measured on real boards: 0 same-colour touches
-at every difficulty, 5 of 6 palette colours used. To restyle, edit `ARROW_PALETTE`; order matters
-only for which colour is most common.
+## Arrow colour (v1.49.0)
 
-## Sound effects (v1.48.0)
+Nine palettes live in `ARROW_PALETTES` near the top of the script. Each entry is
+`{n: name, d: description, c: [six hex colours], sep: [6x6 matrix]}`.
+
+`paletteFor(level)` picks one: the stored `aa_palette` if the player pinned one in Settings,
+otherwise `level % 9`. Deterministic by design — replaying a level looks the same, consecutive
+levels always differ.
+
+| Palette | Character | Contrast vs board | Worst colour distance |
+|---|---|---|---|
+| **Reef Flats** | bright tropical shallows | 6.63 | 19.9 |
+| **Midnight Tide** | cold water, ice and violet | 5.51 | 17.7 |
+| **Sunset Troll** | warm evening water | 5.57 | 17.8 |
+| **Kelp Forest** | greens, gold and teal | 5.66 | 20.8 |
+| **Night Bite** | electric on black water | 5.95 | 21.4 |
+| **Dawn Patrol** | soft morning light | 6.73 | 19.5 |
+| **Blue Marlin** | deep ocean with gold | 4.68 | 17.5 |
+| **Coral Spawn** | corals, aqua and orchid | 5.92 | 19.8 |
+| **Clear Water** | colour-blind safe | 4.88 | 21.7 |
+
+For comparison, the commercial arrow-maze game these were modelled on scores 3.56 and 12.6 on those
+two columns, so every palette here is more readable than its inspiration.
+
+**Colour order matters.** The greedy colouring takes the lowest free index first, so a palette's
+first three or four colours dominate how a board looks. Lead each palette with its signature hues —
+Night Bite and Kelp Forest originally looked near-identical on the board purely because both began
+with green and gold.
+
+**`sep` is a 6x6 matrix** of the worst-case perceptual distance between two slots across
+protanopia, deuteranopia and tritanopia. It is currently informational. An earlier build used it to
+steer the colouring away from seating confusable pairs together; measurement showed it bought
+nothing (a dense board uses five or six of six colours, so nearly every pair ends up adjacent
+somewhere) and cost correctness, so colour-blind players are served by pinning **Clear Water**
+instead, which is built for it.
+
+**Colouring is now retry-and-repair.** Greedy, hardest arrow first; if any two touching arrows
+still share a colour, retry with deterministically shuffled orderings, then repair arrow by arrow.
+A few dense boards genuinely need a seventh colour, and the previous fallback (`i % palette.length`)
+could repeat one next to itself — a latent bug from the original colouring code. Verified over 405
+generated boards across all nine palettes and all three difficulties: **zero** touching arrows
+sharing a colour.
+
+To add a palette, append to `ARROW_PALETTES`; the picker and the rotation pick it up automatically.
+Keep six colours — fewer breaks the no-adjacent guarantee on dense boards.
+
+## Sound effects (v1.49.0)
 Eighteen effects ship in `assets/audio/`. The swooshes are your recordings; the rest are
 synthesised with soft 25–50ms eased attacks and rolled-off highs — a sub-10ms attack on broadband
 content is what made the first generation sound like gunshots, so nothing is cut faster than 25ms.
@@ -176,12 +215,12 @@ The two swooshes overlap heavily while clearing quickly, so `clear` gets a 6-voi
 `clearFinal` 4, and neither is ever pitch-shifted. Short effects keep 3 voices and a ±4% pitch
 wobble so repeats are not identical. Levels are set by `sfxLevel()` — see **Ducking** above.
 
-## Reveal timing (v1.48.0)
+## Reveal timing (v1.49.0)
 The fish stays hidden for the whole level. `revealAll()` fires the moment the final arrow leaves,
 rippling tiles out from the centre over ~620ms, with the species card following 1.5s later so the
 final swoosh and the reveal both have room.
 
-## ARTEZIQ Ladybug feedback (v1.48.0)
+## ARTEZIQ Ladybug feedback (v1.49.0)
 
 Wired exactly as in Angler's Navigator v066, from the shared package **ARTEZIQ-Ladybug-shared-v0.2**.
 `ladybug-feedback.js`, `ladybug-auth.js` and `vendor/html2canvas.min.js` are **byte-identical** to the
@@ -219,7 +258,7 @@ ladybug/
 
 A **partial upload is the number one cause of "no ladybug"**. The second cause is **stale cache**:
 assets are served cache-first, so an installed device keeps whatever it cached until the
-service-worker cache name changes. As of v1.48.0 `ladybug-config.js` is exempt — it is fetched
+service-worker cache name changes. As of v1.49.0 `ladybug-config.js` is exempt — it is fetched
 network-first with a cached fallback, so changing a key takes effect without a version bump. Every
 OTHER file in `ladybug/` still obeys the rule: **bump the cache name whenever one of them changes.**
 
@@ -261,7 +300,7 @@ from which overlay is visible: Splash, Settings, Choose Difficulty, About, Speci
 Fish Caught, Level Complete, or Playing. **Never** pass free text, and nothing here does — only
 counts, booleans and short enum labels.
 
-## Tester copy on Cloudflare Pages (v1.48.0)
+## Tester copy on Cloudflare Pages (v1.49.0)
 
 The app is served from two places during testing: `davidfliesen.github.io/anglers-arrows/` (live,
 public) and a Cloudflare Pages copy at a site root. **No app change was needed to support this** —

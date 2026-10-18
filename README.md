@@ -1,11 +1,23 @@
-# Angler's Arrows — v1.48.0
+# Angler's Arrows — v1.49.0
 
-**Version 1.48.0** · ARTEZIQ · updated 2026-10-09
+**Version 1.49.0** · ARTEZIQ · updated 2026-10-09
 
 Offline PWA puzzle: every level is a fish built from bent arrow paths. Clear the arrows to
 reveal the species artwork, then learn to recognize it by its features.
 
 ### Changelog
+- **1.49.0** — **Nine arrow colour schemes instead of one.** Each level wears a different palette,
+  chosen deterministically so a replay looks the same while consecutive levels always differ:
+  Reef Flats, Midnight Tide, Sunset Troll, Kelp Forest, Night Bite, Dawn Patrol, Blue Marlin,
+  Coral Spawn and Clear Water. Settings gains an **Arrow colours** picker — leave it on Shuffle or
+  pin a favourite; changing it recolours the board you are on without re-dealing it. Every palette
+  was checked for contrast against the dark board and for separation between any two arrows, and
+  all nine beat the reference game that inspired them (contrast 4.68+ vs its 3.56, worst colour
+  distance 17.5+ vs its 12.6). **Clear Water** is built to stay readable for colour-blind players.
+  Also fixes a latent colouring bug present since arrows were first coloured: a few dense boards
+  genuinely need a seventh colour, and the old fallback could then repeat a colour next to itself.
+  Colouring now retries and repairs — 405 generated boards across every palette and difficulty, zero
+  touching arrows sharing a colour.
 - **1.48.0** — Prepared for a Cloudflare Pages tester copy alongside GitHub Pages. No app behaviour
   changed: an audit confirmed every path is already relative and the manifest already uses
   `start_url`/`scope` of `.`, so the same files serve correctly from a site root
